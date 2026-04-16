@@ -1,10 +1,8 @@
-mcp>=1.0.0
+mcp>=1.0.0,<2
 weaviate-client>=4.17.0,<5
-starlette>=0.37
-uvicorn>=0.27.0
-google-cloud-aiplatform>=1.66.0
-vertexai>=1.66.0
-requests>=2.31.0
-openai>=1.0.0
-
-google-auth>=2.35.0
+starlette>=0.37,<1
+uvicorn>=0.27,<1
+google-cloud-aiplatform>=1.66.0,<2
+requests>=2.31.0,<3
+openai>=1.0.0,<2
+google-auth>=2.35.0,<3
