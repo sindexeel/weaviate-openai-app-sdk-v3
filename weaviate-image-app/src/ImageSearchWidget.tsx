@@ -196,7 +196,7 @@ export const ImageSearchWidget: React.FC = () => {
             color: "#666",
           }}
         >
-          Carica un'immagine, un PDF o un DWG per trovare progetti simili nella collezione Sinde
+          Carica un'immagine o un PDF per trovare progetti simili nella collezione Sinde
         </p>
       </div>
 
@@ -214,7 +214,7 @@ export const ImageSearchWidget: React.FC = () => {
         <div style={{ marginBottom: "12px" }}>
           <input
             type="file"
-            accept=".dwg,.pdf,application/pdf,image/*"
+            accept=".pdf,application/pdf,image/*"
             onChange={handleFileChange}
             id="file-input"
             style={{ display: "none" }}

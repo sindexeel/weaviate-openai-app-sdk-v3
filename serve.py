@@ -227,13 +227,6 @@ def _looks_like_pdf(file_bytes: bytes, filename: Optional[str] = None) -> bool:
     return file_bytes.startswith(b"%PDF-")
 
 
-def _looks_like_dwg(file_bytes: bytes, filename: Optional[str] = None) -> bool:
-    if filename and filename.lower().endswith(".dwg"):
-        return True
-    # I file DWG iniziano tipicamente con una signature tipo "AC10xx".
-    return len(file_bytes) >= 6 and file_bytes[:4] == b"AC10"
-
-
 def _pdf_bytes_to_png_base64(file_bytes: bytes) -> Optional[str]:
     """
     Converte la prima pagina di un PDF in PNG base64.
@@ -266,30 +259,6 @@ def _pdf_bytes_to_png_base64(file_bytes: bytes) -> Optional[str]:
         return base64.b64encode(buffer.getvalue()).decode("utf-8")
     except Exception as exc:
         print(f"[pdf] errore conversione PDF->PNG: {exc}")
-        return None
-
-
-def _dwg_bytes_to_png_base64(file_bytes: bytes) -> Optional[str]:
-    """
-    Tenta di convertire un DWG in PNG base64 tramite Aspose.CAD.
-    Restituisce None se la conversione non e' disponibile o fallisce.
-    """
-    try:
-        import aspose.cad as cad
-        from io import BytesIO
-    except Exception as exc:
-        print(f"[dwg] aspose-cad non disponibile: {exc}")
-        return None
-
-    try:
-        src = BytesIO(file_bytes)
-        out = BytesIO()
-        image = cad.Image.load(src)
-        png_options = cad.imageoptions.PngOptions()
-        image.save(out, png_options)
-        return base64.b64encode(out.getvalue()).decode("utf-8")
-    except Exception as exc:
-        print(f"[dwg] errore conversione DWG->PNG: {exc}")
         return None
 
 
@@ -984,18 +953,6 @@ async def upload_image_endpoint(request):
                                 },
                                 status_code=400,
                             )
-                    elif _looks_like_dwg(file_bytes, filename):
-                        image_b64 = _dwg_bytes_to_png_base64(file_bytes)
-                        if not image_b64:
-                            return JSONResponse(
-                                {
-                                    "error": (
-                                        "Impossibile processare il file DWG. "
-                                        "Installa aspose-cad e verifica che il file non sia corrotto."
-                                    )
-                                },
-                                status_code=400,
-                            )
                     else:
                         image_b64 = base64.b64encode(file_bytes).decode("utf-8")
                 finally:
@@ -1283,15 +1240,6 @@ def upload_image(
                         "error": (
                             "Failed to convert PDF to image. "
                             "Install pypdfium2 and verify the PDF file."
-                        )
-                    }
-            elif _looks_like_dwg(file_bytes, image_path):
-                image_b64_raw = _dwg_bytes_to_png_base64(file_bytes)
-                if not image_b64_raw:
-                    return {
-                        "error": (
-                            "Failed to convert DWG to image. "
-                            "Install aspose-cad and verify the DWG file..."
                         )
                     }
             else:
