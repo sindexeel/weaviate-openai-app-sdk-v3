@@ -104,7 +104,7 @@ function renderWidget(root) {
     "p",
     { style: { marginTop: "0", marginBottom: "12px" } },
     [
-      "Carica un'immagine o un PDF, lo inviamo al tuo server MCP e usiamo ",
+      "Carica un'immagine, un PDF o un DWG, lo inviamo al tuo server MCP e usiamo ",
       createEl("code", {}, ["image_search_vertex"]),
       " sulla collection ",
       createEl("strong", {}, ["Sinde"]),
@@ -114,7 +114,7 @@ function renderWidget(root) {
 
   const fileInput = createEl("input", {
     type: "file",
-    accept: ".pdf,application/pdf,image/*",
+    accept: ".dwg,.pdf,application/pdf,image/*",
   });
   const button = createEl(
     "button",
@@ -146,7 +146,7 @@ function renderWidget(root) {
   async function handleClick() {
     if (loading) return;
     if (!currentFile) {
-      status.textContent = "Seleziona prima un'immagine o un PDF.";
+      status.textContent = "Seleziona prima un'immagine, un PDF o un DWG.";
       return;
     }
 
