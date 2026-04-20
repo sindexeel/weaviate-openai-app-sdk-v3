@@ -1,8 +1,15 @@
 // src/ImageSearchWidget.tsx
 import React, { useState, useEffect } from "react";
 
-// URL base del tuo server MCP (quello con serve.py)
-const MCP_BASE_URL = "https://weaviate-openai-app-sdk.onrender.com";
+// Usa l'origine dell'asset JS servito dal backend corrente.
+// In questo modo il widget chiama sempre lo stesso host da cui e' stato caricato.
+const MCP_BASE_URL = (() => {
+  try {
+    return new URL(import.meta.url).origin;
+  } catch {
+    return "https://weaviate-openai-app-sdk.onrender.com";
+  }
+})();
 
 type SearchResult = {
   uuid?: string;
@@ -207,7 +214,7 @@ export const ImageSearchWidget: React.FC = () => {
         <div style={{ marginBottom: "12px" }}>
           <input
             type="file"
-            accept="image/*,.pdf,application/pdf"
+            accept=".pdf,application/pdf,image/*"
             onChange={handleFileChange}
             id="file-input"
             style={{ display: "none" }}

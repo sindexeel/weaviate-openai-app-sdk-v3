@@ -1,7 +1,16 @@
 // image-widget.js
 
-// 🔴 Cambia questo con l'URL del tuo server MCP (serve.py)
-const MCP_BASE_URL = "https://weaviate-openai-app-sdk.onrender.com";
+// Usa la stessa origin dello script corrente (fallback all'URL storico).
+const MCP_BASE_URL = (() => {
+  try {
+    if (document.currentScript && document.currentScript.src) {
+      return new URL(document.currentScript.src).origin;
+    }
+    return window.location.origin;
+  } catch (_err) {
+    return "https://weaviate-openai-app-sdk.onrender.com";
+  }
+})();
 
 function createEl(tag, attrs = {}, children = []) {
   const el = document.createElement(tag);
@@ -105,7 +114,7 @@ function renderWidget(root) {
 
   const fileInput = createEl("input", {
     type: "file",
-    accept: "image/*,.pdf,application/pdf",
+    accept: ".pdf,application/pdf,image/*",
   });
   const button = createEl(
     "button",
