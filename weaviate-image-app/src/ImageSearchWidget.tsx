@@ -53,9 +53,9 @@ export const ImageSearchWidget: React.FC = () => {
 
     try {
       setIsLoading(true);
-      setStatus("Caricamento del progetto in corso...");
+      setStatus("Caricamento del file in corso...");
 
-      // 1️⃣ Upload immagine al tuo endpoint /upload-image (HTTP, non MCP tool)
+      // 1️⃣ Upload immagine/PDF al tuo endpoint /upload-image (HTTP, non MCP tool)
       const form = new FormData();
       form.append("image", file);
 
@@ -189,7 +189,7 @@ export const ImageSearchWidget: React.FC = () => {
             color: "#666",
           }}
         >
-          Carica un progetto per trovare progetti simili nella collezione Sinde
+          Carica un'immagine o un PDF per trovare progetti simili nella collezione Sinde
         </p>
       </div>
 
@@ -207,7 +207,7 @@ export const ImageSearchWidget: React.FC = () => {
         <div style={{ marginBottom: "12px" }}>
           <input
             type="file"
-            accept="image/*"
+            accept="image/*,.pdf,application/pdf"
             onChange={handleFileChange}
             id="file-input"
             style={{ display: "none" }}

@@ -6,3 +6,4 @@ google-cloud-aiplatform>=1.66.0,<2
 requests>=2.31.0,<3
 openai>=1.0.0,<2
 google-auth>=2.35.0,<3
+pypdfium2>=4.30.0,<5

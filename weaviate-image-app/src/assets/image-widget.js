@@ -95,7 +95,7 @@ function renderWidget(root) {
     "p",
     { style: { marginTop: "0", marginBottom: "12px" } },
     [
-      "Carica un'immagine, la inviamo al tuo server MCP e usiamo ",
+      "Carica un'immagine o un PDF, lo inviamo al tuo server MCP e usiamo ",
       createEl("code", {}, ["image_search_vertex"]),
       " sulla collection ",
       createEl("strong", {}, ["Sinde"]),
@@ -103,7 +103,10 @@ function renderWidget(root) {
     ]
   );
 
-  const fileInput = createEl("input", { type: "file", accept: "image/*" });
+  const fileInput = createEl("input", {
+    type: "file",
+    accept: "image/*,.pdf,application/pdf",
+  });
   const button = createEl(
     "button",
     {
@@ -134,7 +137,7 @@ function renderWidget(root) {
   async function handleClick() {
     if (loading) return;
     if (!currentFile) {
-      status.textContent = "Seleziona prima un'immagine.";
+      status.textContent = "Seleziona prima un'immagine o un PDF.";
       return;
     }
 
@@ -143,10 +146,10 @@ function renderWidget(root) {
       button.textContent = "Attendere...";
       button.style.cursor = "default";
       button.disabled = true;
-      status.textContent = "Caricamento immagine...";
+      status.textContent = "Caricamento file...";
 
       const imageId = await uploadImage(currentFile);
-      status.textContent = `Immagine caricata (image_id = ${imageId}). Ricerca in corso...`;
+      status.textContent = `File caricato (image_id = ${imageId}). Ricerca in corso...`;
 
       const results = await callImageSearchVertex(imageId, 5);
 

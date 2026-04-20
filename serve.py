@@ -3,6 +3,7 @@ import os
 import json
 import time
 import uuid
+import base64
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
@@ -218,6 +219,41 @@ _BASE_URL = (
     or "https://weaviate-openai-app-sdk.onrender.com"
 )
 _BASE_HOST = urlparse(_BASE_URL).netloc
+
+
+def _looks_like_pdf(file_bytes: bytes, filename: Optional[str] = None) -> bool:
+    if filename and filename.lower().endswith(".pdf"):
+        return True
+    return file_bytes.startswith(b"%PDF-")
+
+
+def _pdf_bytes_to_png_base64(file_bytes: bytes) -> Optional[str]:
+    """
+    Converte la prima pagina di un PDF in PNG base64.
+    Restituisce None se la conversione fallisce.
+    """
+    try:
+        import pypdfium2 as pdfium
+    except Exception as exc:
+        print(f"[pdf] pypdfium2 non disponibile: {exc}")
+        return None
+
+    try:
+        pdf = pdfium.PdfDocument(file_bytes)
+        if len(pdf) == 0:
+            print("[pdf] documento senza pagine")
+            return None
+
+        page = pdf[0]
+        bitmap = page.render(scale=2).to_pil()
+        from io import BytesIO
+
+        buffer = BytesIO()
+        bitmap.save(buffer, format="PNG")
+        return base64.b64encode(buffer.getvalue()).decode("utf-8")
+    except Exception as exc:
+        print(f"[pdf] errore conversione PDF->PNG: {exc}")
+        return None
 
 
 def _build_vertex_header_map(token: str) -> Dict[str, str]:
@@ -896,10 +932,22 @@ async def upload_image_endpoint(request):
 
             file = form["image"]
             if hasattr(file, "read"):
-                import base64
-
                 file_bytes = await file.read()
-                image_b64 = base64.b64encode(file_bytes).decode("utf-8")
+                filename = getattr(file, "filename", None)
+                if _looks_like_pdf(file_bytes, filename):
+                    image_b64 = _pdf_bytes_to_png_base64(file_bytes)
+                    if not image_b64:
+                        return JSONResponse(
+                            {
+                                "error": (
+                                    "Impossibile processare il PDF. "
+                                    "Installa pypdfium2 e verifica che il file non sia corrotto."
+                                )
+                            },
+                            status_code=400,
+                        )
+                else:
+                    image_b64 = base64.b64encode(file_bytes).decode("utf-8")
             else:
                 return JSONResponse(
                     {"error": "Invalid file upload"}, status_code=400
@@ -1168,14 +1216,24 @@ def upload_image(
     if image_path:
         print(f"[upload_image] Loading image from path: {image_path}")
         try:
-            import base64
-
             if not os.path.exists(image_path):
                 return {"error": f"File not found: {image_path}"}
             with open(image_path, "rb") as f:
                 file_bytes = f.read()
+
+            if _looks_like_pdf(file_bytes, image_path):
+                image_b64_raw = _pdf_bytes_to_png_base64(file_bytes)
+                if not image_b64_raw:
+                    return {
+                        "error": (
+                            "Failed to convert PDF to image. "
+                            "Install pypdfium2 and verify the PDF file."
+                        )
+                    }
+            else:
                 image_b64_raw = base64.b64encode(file_bytes).decode("utf-8")
-                cleaned_b64 = _clean_base64(image_b64_raw)
+
+            cleaned_b64 = _clean_base64(image_b64_raw) if image_b64_raw else None
         except Exception as e:
             return {
                 "error": f"Failed to load image from path {image_path}: {str(e)}"
