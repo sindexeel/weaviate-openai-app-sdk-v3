@@ -1291,7 +1291,7 @@ def upload_image(
                     return {
                         "error": (
                             "Failed to convert DWG to image. "
-                            "Install aspose-cad and verify the DWG file."
+                            "Install aspose-cad and verify the DWG file..."
                         )
                     }
             else:
