@@ -138,7 +138,7 @@ def _patch_mcp_transport_security():
     public_url = (
         os.environ.get("PUBLIC_URL")
         or os.environ.get("BASE_URL")
-        or "https://weaviate-openai-app-sdk.onrender.com"
+        or "https://weaviate-openai-app-sdk-v3.onrender.com"
     )
     public_host = urlparse(public_url).netloc
 
@@ -216,7 +216,7 @@ _WIDGET_DIST_DIR = _BASE_DIR / "weaviate-image-app" / "dist"
 _BASE_URL = (
     os.environ.get("PUBLIC_URL")
     or os.environ.get("BASE_URL")
-    or "https://weaviate-openai-app-sdk.onrender.com"
+    or "https://weaviate-openai-app-sdk-v3.onrender.com"
 )
 _BASE_HOST = urlparse(_BASE_URL).netloc
 

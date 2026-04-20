@@ -7,7 +7,7 @@ const MCP_BASE_URL = (() => {
   try {
     return new URL(import.meta.url).origin;
   } catch {
-    return "https://weaviate-openai-app-sdk.onrender.com";
+    return "https://weaviate-openai-app-sdk-v3.onrender.com";
   }
 })();
 
