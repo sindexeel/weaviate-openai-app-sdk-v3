@@ -1435,11 +1435,19 @@ def hybrid_search(
             else:
                 print("[hybrid_search] nessuna query_caption generata, uso solo immagine")
 
+            # Evita query vuota: il vectorizer remoto di Weaviate risponde 400
+            # ("No embedding input is provided") quando non riceve testo.
+            fallback_query = (
+                query
+                or "technical mechanical drawing component geometry"
+            )
+            final_query = (query_caption or "").strip() or fallback_query
+
             # 2️⃣ usiamo SOLO la descrizione GPT come query testuale
             #    ignoriamo completamente la query utente quando c'è un'immagine
             #    Weaviate genererà automaticamente il vettore dalla query se ha un vectorizer configurato
             hybrid_params: Dict[str, Any] = {
-                "query": query_caption if query_caption else "",  # SOLO descrizione GPT, ignora query utente
+                "query": final_query,
                 "alpha": alpha,
                 "limit": limit,
                 # NON passiamo più "vector": il vettore verrà generato automaticamente da Weaviate dalla query
@@ -1689,7 +1697,7 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
 
     except Exception as e:
         print(f"[query-caption] errore nella descrizione immagine: {e}")
-        return ""
+        return None
 
 
 @mcp.tool()
