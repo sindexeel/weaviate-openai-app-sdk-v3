@@ -1460,7 +1460,36 @@ def hybrid_search(
             # DEBUG: log dei parametri prima della chiamata
             print(f"[DEBUG] hybrid_params: query={repr(hybrid_params['query'])}, alpha={hybrid_params['alpha']}, limit={hybrid_params['limit']}, query_properties={hybrid_params['query_properties']}")
 
-            resp = coll.query.hybrid(**hybrid_params)
+            try:
+                resp = coll.query.hybrid(**hybrid_params)
+            except Exception as exc:
+                err_text = str(exc)
+                if (
+                    "No embedding input is provided" in err_text
+                    or "remote client vectorize" in err_text
+                ):
+                    # Fallback robusto: se il vectorizer remoto rifiuta la query,
+                    # usiamo BM25 per non bloccare la ricerca lato widget.
+                    bm25_query = final_query.strip() or "mechanical drawing"
+                    print(
+                        "[hybrid_search] hybrid vectorize failed; fallback to bm25 "
+                        f"with query={repr(bm25_query)}"
+                    )
+                    resp = coll.query.bm25(
+                        query=bm25_query,
+                        query_properties=["caption", "name"],
+                        limit=limit,
+                        return_properties=[
+                            "name",
+                            "source_pdf",
+                            "page_index",
+                            "mediaType",
+                            "image_b64",
+                        ],
+                        return_metadata=MetadataQuery(score=True),
+                    )
+                else:
+                    raise
         else:
             hybrid_params = {
                 "query": query,
