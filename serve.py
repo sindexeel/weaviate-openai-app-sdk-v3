@@ -1660,8 +1660,8 @@ def _as_float(value: Any) -> Optional[float]:
 
 def _filter_results_by_score_and_delta(
     results: List[Dict[str, Any]],
-    threshold_primary: float = 0.90,
-    threshold_fallback: float = 0.80,
+    threshold_primary: float = 0.80,
+    threshold_fallback: float = 0.70,
     max_delta: float = 0.07,
 ) -> List[Dict[str, Any]]:
     def select(threshold: float) -> List[Dict[str, Any]]:
