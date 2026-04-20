@@ -239,6 +239,12 @@ def _pdf_bytes_to_png_base64(file_bytes: bytes) -> Optional[str]:
         return None
 
     try:
+        try:
+            from PIL import Image  # noqa: F401
+        except Exception as exc:
+            print(f"[pdf] Pillow non disponibile per conversione PDF->PNG: {exc}")
+            return None
+
         pdf = pdfium.PdfDocument(file_bytes)
         if len(pdf) == 0:
             print("[pdf] documento senza pagine")
@@ -932,22 +938,28 @@ async def upload_image_endpoint(request):
 
             file = form["image"]
             if hasattr(file, "read"):
-                file_bytes = await file.read()
-                filename = getattr(file, "filename", None)
-                if _looks_like_pdf(file_bytes, filename):
-                    image_b64 = _pdf_bytes_to_png_base64(file_bytes)
-                    if not image_b64:
-                        return JSONResponse(
-                            {
-                                "error": (
-                                    "Impossibile processare il PDF. "
-                                    "Installa pypdfium2 e verifica che il file non sia corrotto."
-                                )
-                            },
-                            status_code=400,
-                        )
-                else:
-                    image_b64 = base64.b64encode(file_bytes).decode("utf-8")
+                try:
+                    file_bytes = await file.read()
+                    filename = getattr(file, "filename", None)
+                    if _looks_like_pdf(file_bytes, filename):
+                        image_b64 = _pdf_bytes_to_png_base64(file_bytes)
+                        if not image_b64:
+                            return JSONResponse(
+                                {
+                                    "error": (
+                                        "Impossibile processare il PDF. "
+                                        "Installa pypdfium2 e pillow e verifica che il file non sia corrotto."
+                                    )
+                                },
+                                status_code=400,
+                            )
+                    else:
+                        image_b64 = base64.b64encode(file_bytes).decode("utf-8")
+                finally:
+                    try:
+                        await file.close()
+                    except Exception:
+                        pass
             else:
                 return JSONResponse(
                     {"error": "Invalid file upload"}, status_code=400
