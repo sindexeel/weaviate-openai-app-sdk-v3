@@ -322,9 +322,9 @@ def _get_weaviate_api_key() -> str:
 def _get_default_collection() -> str:
     """
     Restituisce il nome della collection di default.
-    Se WEAVIATE_DEFAULT_COLLECTION è impostata, usa quella; altrimenti 'Sinde'.
+    Se WEAVIATE_DEFAULT_COLLECTION è impostata, usa quella; altrimenti 'Sinde3'.
     """
-    return os.environ.get("WEAVIATE_DEFAULT_COLLECTION", "Sinde")
+    return os.environ.get("WEAVIATE_DEFAULT_COLLECTION", "Sinde3")
 
 
 def _get_default_alpha() -> float:
@@ -1022,7 +1022,7 @@ async def image_search_http(request):
     Endpoint HTTP per effettuare la ricerca immagini usando hybrid_search.
     Si aspetta un JSON tipo:
       {
-        "collection": "Sinde",
+        "collection": "Sinde3",
         "image_id": "uuid from /upload-image",
         "image_url": "... (opzionale)",
         "caption": "... (opzionale, non più usato)",
@@ -1037,7 +1037,7 @@ async def image_search_http(request):
     except Exception:
         return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
 
-    # Usa la collection passata o il default da WEAVIATE_DEFAULT_COLLECTION (fallback 'Sinde')
+    # Usa la collection passata o il default da WEAVIATE_DEFAULT_COLLECTION (fallback 'Sinde3')
     collection = data.get("collection") or _get_default_collection()
     image_id = data.get("image_id")
     image_url = data.get("image_url")
@@ -2167,7 +2167,7 @@ async def _list_tools() -> List[types.Tool]:
                 "properties": {
                     "collection": {
                         "type": "string",
-                        "description": "Nome della collection (sempre 'Sinde' per questo assistente)",
+                        "description": "Nome della collection (sempre 'Sinde3' per questo assistente)",
                     },
                     "query": {
                         "type": "string",
@@ -2208,8 +2208,8 @@ async def _list_tools() -> List[types.Tool]:
             tool_title = "Ricerca ibrida (BM25 + vettoriale)"
             tool_description = (
                 "Esegue una ricerca ibrida combinando ricerca keyword (BM25) e ricerca vettoriale. "
-                "Tool principale per cercare nella collection Sinde.\n\n"
-                "ISTRUZIONI: Usa SEMPRE collection='Sinde'. Usa query_properties=['caption','name'] e "
+                "Tool principale per cercare nella collection Sinde3.\n\n"
+                "ISTRUZIONI: Usa SEMPRE collection='Sinde3'. Usa query_properties=['caption','name'] e "
                 "return_properties=['name','source_pdf','page_index','mediaType']. Mantieni alpha=0.2 e limit=20 "
                 "salvo richieste diverse. Per ricerche per immagini, usa image_id (da /upload-image) o image_url."
             )
@@ -2319,7 +2319,7 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
 
             clean_args: Dict[str, Any] = {}
 
-            # collection con default preso da WEAVIATE_DEFAULT_COLLECTION (o 'Sinde')
+            # collection con default preso da WEAVIATE_DEFAULT_COLLECTION (o 'Sinde3')
             clean_args["collection"] = args.get("collection") or _get_default_collection()
 
             # query obbligatoria

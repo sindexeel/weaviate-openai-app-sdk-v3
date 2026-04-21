@@ -61,7 +61,7 @@ async function callImageSearchVertex(imageId, limit = 5) {
   }
 
   const resp = await window.openai.callTool("image_search_vertex", {
-    collection: "Sinde",
+    collection: "Sinde3",
     image_id: imageId,
     limit,
   });
@@ -107,7 +107,7 @@ function renderWidget(root) {
       "Carica un'immagine o un PDF, lo inviamo al tuo server MCP e usiamo ",
       createEl("code", {}, ["image_search_vertex"]),
       " sulla collection ",
-      createEl("strong", {}, ["Sinde"]),
+      createEl("strong", {}, ["Sinde3"]),
       ".",
     ]
   );
