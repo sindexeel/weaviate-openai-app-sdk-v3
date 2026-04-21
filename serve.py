@@ -1658,37 +1658,37 @@ def _as_float(value: Any) -> Optional[float]:
         return None
 
 
-def _filter_results_by_score_and_delta(
-    results: List[Dict[str, Any]],
-    threshold_primary: float = 0.80,
-    threshold_fallback: float = 0.70,
-    max_delta: float = 0.07,
-) -> List[Dict[str, Any]]:
-    def select(threshold: float) -> List[Dict[str, Any]]:
-        selected: List[Dict[str, Any]] = []
-        prev_score: Optional[float] = None
+# def _filter_results_by_score_and_delta(
+#     results: List[Dict[str, Any]],
+#     threshold_primary: float = 0.80,
+#     threshold_fallback: float = 0.70,
+#     max_delta: float = 0.07,
+# ) -> List[Dict[str, Any]]:
+#    def select(threshold: float) -> List[Dict[str, Any]]:
+#        selected: List[Dict[str, Any]] = []
+#        prev_score: Optional[float] = None
 
-        for item in results:
-            score = _as_float(item.get("bm25_score"))
-            if score is None or score < threshold:
-                continue
-            if prev_score is not None:
-                delta = abs(score - prev_score)
-                if delta > max_delta:
-                    continue
-            selected.append(item)
-            prev_score = score
-        return selected
+#        for item in results:
+#            score = _as_float(item.get("bm25_score"))
+#            if score is None or score < threshold:
+#                continue
+#            if prev_score is not None:
+#                delta = abs(score - prev_score)
+#                if delta > max_delta:
+#                    continue
+#            selected.append(item)
+#            prev_score = score
+#        return selected
 
-    first_pass = select(threshold_primary)
-    if first_pass:
-        return first_pass
+#    first_pass = select(threshold_primary)
+#    if first_pass:
+#        return first_pass
 
-    second_pass = select(threshold_fallback)
-    if second_pass:
-        return second_pass
+#    second_pass = select(threshold_fallback)
+#    if second_pass:
+#        return second_pass
 
-    return results[:1]
+#    return results[:1]
 
 
 def _vertex_embed(
