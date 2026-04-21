@@ -1026,7 +1026,7 @@ async def image_search_http(request):
         "image_id": "uuid from /upload-image",
         "image_url": "... (opzionale)",
         "caption": "... (opzionale, non più usato)",
-        "limit": 10
+        "limit": 20
       }
     
     Usa hybrid_search che genera il vettore esternamente con Vertex AI + GPT,
@@ -1847,7 +1847,7 @@ def image_search_vertex(
     image_id: Optional[str] = None,
     image_url: Optional[str] = None,
     caption: Optional[str] = None,
-    limit: int = 10,
+    limit: int = 20,
 ) -> Dict[str, Any]:
     # Usa la collection di default configurata, mantenendo lo stesso comportamento di forzatura
     default_collection = _get_default_collection()
