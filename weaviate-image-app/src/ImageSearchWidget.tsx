@@ -94,7 +94,7 @@ export const ImageSearchWidget: React.FC = () => {
         body: JSON.stringify({
           collection: "Sinde",
           image_id: imageId,
-          limit: 10,
+          limit: 20,
         }),
       });
 

@@ -1041,7 +1041,7 @@ async def image_search_http(request):
     collection = data.get("collection") or _get_default_collection()
     image_id = data.get("image_id")
     image_url = data.get("image_url")
-    limit = data.get("limit") or 10
+    limit = data.get("limit") or 20
 
     if not image_id and not image_url:
         return JSONResponse(
@@ -1371,7 +1371,7 @@ def semantic_search(collection: str, query: str, limit: int = 10) -> Dict[str, A
 def hybrid_search(
     collection: str,
     query: str,
-    limit: int = 10,
+    limit: int = 20,
     alpha: Optional[float] = None,
     query_properties: Optional[Any] = None,
     image_id: Optional[str] = None,
