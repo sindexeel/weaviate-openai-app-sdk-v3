@@ -1538,7 +1538,7 @@ def hybrid_search(
                     "distance": distance,
                 }
             )
-        filtered = _filter_results_by_score_and_delta(out)
+        filtered = out # _filter_results_by_score_and_delta(out)
         return {"count": len(filtered), "results": filtered}
     finally:
         client.close()
