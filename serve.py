@@ -2202,7 +2202,7 @@ async def _list_tools() -> List[types.Tool]:
                 "Esegue una ricerca ibrida combinando ricerca keyword (BM25) e ricerca vettoriale. "
                 "Tool principale per cercare nella collection Sinde.\n\n"
                 "ISTRUZIONI: Usa SEMPRE collection='Sinde'. Usa query_properties=['caption','name'] e "
-                "return_properties=['name','source_pdf','page_index','mediaType']. Mantieni alpha=0.8 e limit=10 "
+                "return_properties=['name','source_pdf','page_index','mediaType']. Mantieni alpha=0.2 e limit=10 "
                 "salvo richieste diverse. Per ricerche per immagini, usa image_id (da /upload-image) o image_url."
             )
 
