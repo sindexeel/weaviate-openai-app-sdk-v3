@@ -1741,10 +1741,13 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
                 {
                     "role": "system",
                     "content": (
-                        "Sei un esperto di disegno meccanico. "
+                        "Sei un esperto di disegno meccanico e information retrieval. "
                         "Riceverai immagini di tavole tecniche con pezzi meccanici. "
-                        "Devi descrivere solo la geometria del pezzo (forme, fori, spessori, simmetrie), "
-                        "ignorando completamente testi, quote, misure e intestazioni."
+                        "Devi produrre una descrizione geometrica ottimizzata per ricerca ibrida "
+                        "(BM25 + vettoriale). "
+                        "Considera SOLO la geometria del pezzo. "
+                        "Ignora completamente testo, numeri, quote, simboli di quotatura, tolleranze, "
+                        "cartiglio, intestazioni, note, riferimenti e qualsiasi annotazione non geometrica."
                     ),
                 },
                 {
@@ -1753,11 +1756,15 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
                         {
                             "type": "text",
                             "text": (
-                                "Descrivi in modo conciso ma tecnico la forma del pezzo meccanico mostrato. "
-                                "Ignora testo, numeri, quote, cartigli e tutto ciò che non è geometria. "
-                                "Se vedi più viste (frontale, laterale, sezione), usale per ricostruire mentalmente "
-                                "la forma 3D del pezzo.\n\n"
-                                "Rispondi in al massimo 4 frasi, per un totale di non più di 900 caratteri."
+                                "Osserva l'immagine e ricostruisci la geometria del pezzo. "
+                                "Se ci sono più viste (frontale/laterale/sezione), usale per ricostruire la geometria completa.\n\n"
+                                "Descrivi in linguaggio naturale e tecnico la geometria del pezzo.\n\n"
+                                "Linee guida:\n"
+                                "- privilegia invarianti geometriche: corpo cilindrico/cavo, foro passante, gradini, spalle, conicità, simmetrie, scanalature, raggi di raccordo, smussi.\n"
+                                "- usa lessico canonico meccanico e sinonimi (es. scanalatura anulare/circolare, gradino/spalla, smusso/chamfer).\n"
+                                "- non includere quote numeriche salvo angoli chiaramente leggibili (es. 30°, 15°).\n"
+                                "- escludi sempre testo, numeri, quote, cartiglio e qualsiasi elemento non geometrico visibile nella tavola.\n"
+                                "- rispondi in al massimo 4 frasi, per un totale massimo di 900 caratteri."
                             ),
                         },
                         {
