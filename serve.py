@@ -1746,6 +1746,7 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
                         "Devi produrre una descrizione geometrica ottimizzata per ricerca ibrida "
                         "(BM25 + vettoriale). "
                         "Considera SOLO la geometria del pezzo. "
+                        "Non inferire, non ipotizzare, non aggiungere dettagli non osservabili. "
                         "Ignora completamente testo, numeri, quote, simboli di quotatura, tolleranze, "
                         "cartiglio, intestazioni, note, riferimenti e qualsiasi annotazione non geometrica."
                     ),
