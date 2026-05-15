@@ -124,64 +124,11 @@ def _patch_uvicorn_for_render():
         pass
 
 
-def _patch_mcp_transport_security():
-    """
-    Allarga la whitelist degli host accettati dal middleware di sicurezza MCP
-    per evitare 'Invalid Host header' su Render.
-    """
-    try:
-        from mcp.server import transport_security as ts
-    except Exception as e:
-        print(f"[mcp] warning: cannot import transport_security: {e}")
-        return
-
-    public_url = (
-        os.environ.get("PUBLIC_URL")
-        or os.environ.get("BASE_URL")
-        or "https://weaviate-openai-app-sdk-v3.onrender.com"
-    )
-    public_host = urlparse(public_url).netloc
-
-    original_init = ts.TransportSecuritySettings.__init__
-
-    def patched_init(self, *args, **kwargs):
-        # chiama l'init originale
-        original_init(self, *args, **kwargs)
-
-        # Prende la lista esistente (se c'è) e la copia
-        try:
-            hosts = list(getattr(self, "allowed_hosts", []) or [])
-        except Exception:
-            hosts = []
-
-        extra_hosts = [
-            "localhost",
-            "localhost:*",
-            "127.0.0.1",
-            "127.0.0.1:*",
-        ]
-
-        if public_host:
-            # es: "weaviate-openai-app-sdk.onrender.com"
-            extra_hosts.append(public_host)
-            extra_hosts.append(f"{public_host}:*")
-
-        for h in extra_hosts:
-            if h not in hosts:
-                hosts.append(h)
-
-        self.allowed_hosts = hosts
-        print(f"[mcp] TransportSecuritySettings.allowed_hosts = {self.allowed_hosts}")
-
-    ts.TransportSecuritySettings.__init__ = patched_init
-    print("[mcp] patched MCP TransportSecuritySettings to allow Render host + localhost")
-
-
 # Applica i patch all'inizio
 _patch_uvicorn_for_render()
-_patch_mcp_transport_security()
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from starlette.responses import JSONResponse
 
 # --- Weaviate client imports (v4) ---
@@ -611,8 +558,23 @@ SERVER_PORT = int(os.environ.get("PORT", "10000"))
 os.environ.setdefault("FASTMCP_PORT", str(SERVER_PORT))
 os.environ.setdefault("FASTMCP_HOST", "0.0.0.0")
 
-# Non passiamo host/port direttamente, lasciamo che FastMCP usi le env FASTMCP_*
-mcp = FastMCP(_MCP_SERVER_NAME, stateless_http=True)
+# Configura la transport security direttamente sul costruttore FastMCP (approccio ufficiale mcp 1.23+).
+# Necessario su Render: host=0.0.0.0 attiva la protezione DNS rebinding con allowed_hosts=[],
+# bloccando tutte le richieste con 421. Passiamo l'host pubblico esplicitamente.
+_transport_security = TransportSecuritySettings(
+    enable_dns_rebinding_protection=True,
+    allowed_hosts=[
+        "localhost",
+        "localhost:*",
+        "127.0.0.1",
+        "127.0.0.1:*",
+        _BASE_HOST,
+        f"{_BASE_HOST}:*",
+    ],
+)
+print(f"[mcp] TransportSecuritySettings.allowed_hosts = {_transport_security.allowed_hosts}")
+
+mcp = FastMCP(_MCP_SERVER_NAME, stateless_http=True, transport_security=_transport_security)
 
 
 def _apply_mcp_metadata():
