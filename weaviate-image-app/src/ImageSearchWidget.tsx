@@ -11,6 +11,10 @@ const MCP_BASE_URL = (() => {
   }
 })();
 
+// Imposta a `true` per mostrare uuid, distance raw e bm25_score su ogni card.
+// Cambia questo valore nel codice, rebuilda e rideploya per attivare/disattivare.
+const DEBUG_MODE = true;
+
 type SearchResult = {
   uuid?: string;
   properties?: {
@@ -30,7 +34,6 @@ export const ImageSearchWidget: React.FC = () => {
   const [status, setStatus] = useState<string | null>(null);
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [debugMode, setDebugMode] = useState(true);
   const [enlargedImage, setEnlargedImage] = useState<{
     src: string;
     alt: string;
@@ -180,7 +183,7 @@ export const ImageSearchWidget: React.FC = () => {
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: "24px", textAlign: "center", position: "relative" }}>
+      <div style={{ marginBottom: "24px", textAlign: "center" }}>
         <h1
           style={{
             margin: "0 0 8px 0",
@@ -200,26 +203,6 @@ export const ImageSearchWidget: React.FC = () => {
         >
           Carica un'immagine o un PDF per trovare progetti simili nella collezione Sinde3
         </p>
-        <button
-          onClick={() => setDebugMode((d) => !d)}
-          title={debugMode ? "Disattiva modalità debug" : "Attiva modalità debug"}
-          style={{
-            position: "absolute",
-            top: 0,
-            right: 0,
-            padding: "4px 10px",
-            fontSize: "11px",
-            fontWeight: "600",
-            backgroundColor: debugMode ? "#fd7e14" : "#e9ecef",
-            color: debugMode ? "white" : "#495057",
-            border: "1px solid " + (debugMode ? "#e8690b" : "#ced4da"),
-            borderRadius: "6px",
-            cursor: "pointer",
-            letterSpacing: "0.05em",
-          }}
-        >
-          {debugMode ? "DEBUG ON" : "DEBUG"}
-        </button>
       </div>
 
       {/* Upload Section */}
@@ -478,7 +461,7 @@ export const ImageSearchWidget: React.FC = () => {
                       <strong>Tipo:</strong> {r.properties.mediaType}
                     </div>
                   )}
-                  {debugMode ? (
+                  {DEBUG_MODE ? (
                     <div
                       style={{
                         marginTop: "12px",
