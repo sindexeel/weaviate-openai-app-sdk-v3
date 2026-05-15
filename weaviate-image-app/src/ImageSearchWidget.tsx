@@ -22,6 +22,7 @@ type SearchResult = {
     [key: string]: any;
   };
   distance?: number;
+  bm25_score?: number;
 };
 
 export const ImageSearchWidget: React.FC = () => {
@@ -29,6 +30,7 @@ export const ImageSearchWidget: React.FC = () => {
   const [status, setStatus] = useState<string | null>(null);
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [debugMode, setDebugMode] = useState(true);
   const [enlargedImage, setEnlargedImage] = useState<{
     src: string;
     alt: string;
@@ -178,7 +180,7 @@ export const ImageSearchWidget: React.FC = () => {
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: "24px", textAlign: "center" }}>
+      <div style={{ marginBottom: "24px", textAlign: "center", position: "relative" }}>
         <h1
           style={{
             margin: "0 0 8px 0",
@@ -198,6 +200,26 @@ export const ImageSearchWidget: React.FC = () => {
         >
           Carica un'immagine o un PDF per trovare progetti simili nella collezione Sinde3
         </p>
+        <button
+          onClick={() => setDebugMode((d) => !d)}
+          title={debugMode ? "Disattiva modalità debug" : "Attiva modalità debug"}
+          style={{
+            position: "absolute",
+            top: 0,
+            right: 0,
+            padding: "4px 10px",
+            fontSize: "11px",
+            fontWeight: "600",
+            backgroundColor: debugMode ? "#fd7e14" : "#e9ecef",
+            color: debugMode ? "white" : "#495057",
+            border: "1px solid " + (debugMode ? "#e8690b" : "#ced4da"),
+            borderRadius: "6px",
+            cursor: "pointer",
+            letterSpacing: "0.05em",
+          }}
+        >
+          {debugMode ? "DEBUG ON" : "DEBUG"}
+        </button>
       </div>
 
       {/* Upload Section */}
@@ -456,18 +478,47 @@ export const ImageSearchWidget: React.FC = () => {
                       <strong>Tipo:</strong> {r.properties.mediaType}
                     </div>
                   )}
-                  {typeof r.distance === "number" && (
+                  {debugMode ? (
                     <div
                       style={{
                         marginTop: "12px",
-                        padding: "6px 10px",
-                        backgroundColor: "#f0f0f0",
+                        padding: "8px 10px",
+                        backgroundColor: "#fff3cd",
+                        border: "1px solid #ffc107",
                         borderRadius: "6px",
-                        fontSize: "12px",
+                        fontSize: "11px",
+                        fontFamily: "monospace",
+                        lineHeight: "1.8",
                       }}
                     >
-                      <strong>Similarità:</strong> {(1 - r.distance).toFixed(3)}
+                      <div style={{ fontWeight: "700", marginBottom: "4px", color: "#856404" }}>
+                        DEBUG
+                      </div>
+                      <div><strong>uuid:</strong> {r.uuid ?? "—"}</div>
+                      {typeof r.distance === "number" && (
+                        <>
+                          <div><strong>distance:</strong> {r.distance.toFixed(6)}</div>
+                          <div><strong>similarity (1−d):</strong> {(1 - r.distance).toFixed(6)}</div>
+                        </>
+                      )}
+                      {typeof r.bm25_score === "number" && (
+                        <div><strong>bm25_score:</strong> {r.bm25_score.toFixed(6)}</div>
+                      )}
                     </div>
+                  ) : (
+                    typeof r.distance === "number" && (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "6px 10px",
+                          backgroundColor: "#f0f0f0",
+                          borderRadius: "6px",
+                          fontSize: "12px",
+                        }}
+                      >
+                        <strong>Similarità:</strong> {(1 - r.distance).toFixed(3)}
+                      </div>
+                    )
                   )}
                 </div>
               </div>
