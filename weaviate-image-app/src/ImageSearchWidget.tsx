@@ -11,6 +11,10 @@ const MCP_BASE_URL = (() => {
   }
 })();
 
+// Imposta a `true` per mostrare uuid, distance raw e bm25_score su ogni card.
+// Cambia questo valore nel codice, rebuilda e rideploya per attivare/disattivare.
+const DEBUG_MODE = true;
+
 type SearchResult = {
   uuid?: string;
   properties?: {
@@ -22,6 +26,7 @@ type SearchResult = {
     [key: string]: any;
   };
   distance?: number;
+  bm25_score?: number;
 };
 
 export const ImageSearchWidget: React.FC = () => {
@@ -456,18 +461,47 @@ export const ImageSearchWidget: React.FC = () => {
                       <strong>Tipo:</strong> {r.properties.mediaType}
                     </div>
                   )}
-                  {typeof r.distance === "number" && (
+                  {DEBUG_MODE ? (
                     <div
                       style={{
                         marginTop: "12px",
-                        padding: "6px 10px",
-                        backgroundColor: "#f0f0f0",
+                        padding: "8px 10px",
+                        backgroundColor: "#fff3cd",
+                        border: "1px solid #ffc107",
                         borderRadius: "6px",
-                        fontSize: "12px",
+                        fontSize: "11px",
+                        fontFamily: "monospace",
+                        lineHeight: "1.8",
                       }}
                     >
-                      <strong>Similarità:</strong> {(1 - r.distance).toFixed(3)}
+                      <div style={{ fontWeight: "700", marginBottom: "4px", color: "#856404" }}>
+                        DEBUG
+                      </div>
+                      <div><strong>uuid:</strong> {r.uuid ?? "—"}</div>
+                      {typeof r.distance === "number" && (
+                        <>
+                          <div><strong>distance:</strong> {r.distance.toFixed(6)}</div>
+                          <div><strong>similarity (1−d):</strong> {(1 - r.distance).toFixed(6)}</div>
+                        </>
+                      )}
+                      {typeof r.bm25_score === "number" && (
+                        <div><strong>bm25_score:</strong> {r.bm25_score.toFixed(6)}</div>
+                      )}
                     </div>
+                  ) : (
+                    typeof r.distance === "number" && (
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "6px 10px",
+                          backgroundColor: "#f0f0f0",
+                          borderRadius: "6px",
+                          fontSize: "12px",
+                        }}
+                      >
+                        <strong>Similarità:</strong> {(1 - r.distance).toFixed(3)}
+                      </div>
+                    )
                   )}
                 </div>
               </div>
