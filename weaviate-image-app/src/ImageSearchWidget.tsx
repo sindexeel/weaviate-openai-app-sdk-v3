@@ -65,11 +65,19 @@ export const ImageSearchWidget: React.FC = () => {
   // Restituisce l'emoji di validazione per un risultato (null = non classificato)
   const getTestEmoji = (name: string): "✅" | "❌" | null => {
     if (!activeTestCase) return null;
-    // Trovare se stesso è sempre atteso
     if (name.includes(activeTestCase.input)) return "✅";
     if (activeTestCase.expected.some((e) => name.includes(e))) return "✅";
     if (activeTestCase.unwanted.some((u) => name.includes(u))) return "❌";
     return null;
+  };
+
+  // Restituisce la label testuale per il pannello debug
+  const getTestLabel = (name: string): "expected" | "unwanted" | "neutral" | null => {
+    if (!activeTestCase) return null;
+    if (name.includes(activeTestCase.input)) return "expected";
+    if (activeTestCase.expected.some((e) => name.includes(e))) return "expected";
+    if (activeTestCase.unwanted.some((u) => name.includes(u))) return "unwanted";
+    return "neutral";
   };
 
   // Chiudi il modal con ESC
@@ -546,6 +554,20 @@ export const ImageSearchWidget: React.FC = () => {
                       )}
                       {typeof r.bm25_score === "number" && (
                         <div><strong>bm25_score:</strong> {r.bm25_score.toFixed(6)}</div>
+                      )}
+                      {r.properties?.name && getTestLabel(r.properties.name) !== null && (
+                        <div>
+                          <strong>output:</strong>{" "}
+                          <span style={{
+                            color:
+                              getTestLabel(r.properties.name) === "expected" ? "#198754" :
+                              getTestLabel(r.properties.name) === "unwanted" ? "#dc3545" :
+                              "#6c757d",
+                            fontWeight: "700",
+                          }}>
+                            {getTestLabel(r.properties.name)}
+                          </span>
+                        </div>
                       )}
                     </div>
                   ) : (
