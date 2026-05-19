@@ -41,6 +41,7 @@ export const ImageSearchWidget: React.FC = () => {
   const [status, setStatus] = useState<string | null>(null);
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [enlargedImage, setEnlargedImage] = useState<{
     src: string;
@@ -57,7 +58,7 @@ export const ImageSearchWidget: React.FC = () => {
   }, []);
 
   // Trova il test case corrispondente al file caricato (match parziale sul nome)
-  const activeTestCase = DEBUG_MODE && file
+  const activeTestCase = debugMode && file
     ? testCases.find((tc) => file.name.includes(tc.input))
     : null;
 
@@ -215,7 +216,7 @@ export const ImageSearchWidget: React.FC = () => {
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: "24px", textAlign: "center" }}>
+      <div style={{ marginBottom: "24px", textAlign: "center", position: "relative" }}>
         <h1
           style={{
             margin: "0 0 8px 0",
@@ -235,6 +236,28 @@ export const ImageSearchWidget: React.FC = () => {
         >
           Carica un'immagine o un PDF per trovare progetti simili nella collezione Sinde3
         </p>
+        {DEBUG_MODE && (
+          <button
+            onClick={() => setDebugMode((d) => !d)}
+            title={debugMode ? "Disattiva modalità debug" : "Attiva modalità debug"}
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              padding: "4px 10px",
+              fontSize: "11px",
+              fontWeight: "600",
+              backgroundColor: debugMode ? "#fd7e14" : "#e9ecef",
+              color: debugMode ? "white" : "#495057",
+              border: "1px solid " + (debugMode ? "#e8690b" : "#ced4da"),
+              borderRadius: "6px",
+              cursor: "pointer",
+              letterSpacing: "0.05em",
+            }}
+          >
+            {debugMode ? "DEBUG ON" : "DEBUG"}
+          </button>
+        )}
       </div>
 
       {/* Upload Section */}
@@ -474,7 +497,7 @@ export const ImageSearchWidget: React.FC = () => {
                       color: "#1a1a1a",
                     }}
                   >
-                    {DEBUG_MODE && getTestEmoji(r.properties.name) !== null && (
+                    {debugMode && getTestEmoji(r.properties.name) !== null && (
                       <span style={{ marginRight: "6px" }}>
                         {getTestEmoji(r.properties.name)}
                       </span>
@@ -498,7 +521,7 @@ export const ImageSearchWidget: React.FC = () => {
                       <strong>Tipo:</strong> {r.properties.mediaType}
                     </div>
                   )}
-                  {DEBUG_MODE ? (
+                  {debugMode ? (
                     <div
                       style={{
                         marginTop: "12px",
