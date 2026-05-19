@@ -712,6 +712,19 @@ async def health(_request):
     return JSONResponse({"status": "ok", "service": "weaviate-mcp-http"})
 
 
+@mcp.custom_route("/test_cases.json", methods=["GET"])
+async def serve_test_cases(request):
+    from starlette.responses import Response
+    file_path = _WIDGET_DIST_DIR / "test_cases.json"
+    if not file_path.exists():
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    return Response(
+        file_path.read_text(encoding="utf-8"),
+        media_type="application/json",
+        headers={"Cache-Control": "no-cache"},
+    )
+
+
 @mcp.custom_route("/assets/{file_path:path}", methods=["GET"])
 async def serve_assets(request):
     from starlette.responses import FileResponse
