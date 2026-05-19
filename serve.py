@@ -1596,19 +1596,22 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
         resp = _OPENAI_CLIENT.chat.completions.create(
             model="gpt-4.1-mini",
             temperature=0,
-            max_tokens=350,
+            max_tokens=450,
             messages=[
                 {
                     "role": "system",
                     "content": (
                         "Sei un esperto di disegno meccanico e information retrieval. "
                         "Riceverai immagini di tavole tecniche con pezzi meccanici. "
-                        "Devi produrre una descrizione geometrica ottimizzata per ricerca ibrida "
+                        "Devi produrre una descrizione geometrica e dimensionale ottimizzata per ricerca ibrida "
                         "(BM25 + vettoriale). "
-                        "Considera SOLO la geometria del pezzo. "
+                        "Considera la geometria del pezzo E le quote dimensionali annotate direttamente sul disegno "
+                        "(diametri, lunghezze, angoli, raggi indicati con linee di quota). "
                         "Non inferire, non ipotizzare, non aggiungere dettagli non osservabili. "
-                        "Ignora completamente testo, numeri, quote, simboli di quotatura, tolleranze, "
-                        "cartiglio, intestazioni, note, riferimenti e qualsiasi annotazione non geometrica."
+                        "IGNORA COMPLETAMENTE il cartiglio, che si trova nell'angolo in basso a destra del foglio: "
+                        "non leggere né usare il numero disegno, la revisione, il titolo, il materiale, "
+                        "la data, il nome del progettista o qualsiasi altro campo del cartiglio. "
+                        "Ignora anche intestazioni, note, riferimenti e simboli non geometrici."
                     ),
                 },
                 {
@@ -1617,15 +1620,22 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
                         {
                             "type": "text",
                             "text": (
-                                "Osserva l'immagine e ricostruisci la geometria del pezzo. "
-                                "Se ci sono più viste (frontale/laterale/sezione), usale per ricostruire la geometria completa.\n\n"
-                                "Descrivi in linguaggio naturale e tecnico la geometria del pezzo.\n\n"
+                                "Osserva il disegno tecnico (ignorando il cartiglio in basso a destra) "
+                                "e descrivi la geometria del pezzo e le sue dimensioni principali.\n\n"
+                                "Se ci sono più viste (frontale, laterale, sezione), usale tutte per ricostruire "
+                                "la geometria completa.\n\n"
                                 "Linee guida:\n"
-                                "- privilegia invarianti geometriche: corpo cilindrico/cavo, foro passante, gradini, spalle, conicità, simmetrie, scanalature, raggi di raccordo, smussi.\n"
-                                "- usa lessico canonico meccanico e sinonimi (es. scanalatura anulare/circolare, gradino/spalla, smusso/chamfer).\n"
-                                "- non includere quote numeriche salvo angoli chiaramente leggibili (es. 30°, 15°).\n"
-                                "- escludi sempre testo, numeri, quote, cartiglio e qualsiasi elemento non geometrico visibile nella tavola.\n"
-                                "- rispondi in al massimo 4 frasi, per un totale massimo di 900 caratteri."
+                                "- descrivi le invarianti geometriche: corpo cilindrico/prismatico/cavo, "
+                                "fori passanti/ciechi, gradini, spalle, conicità, simmetrie, scanalature, "
+                                "raggi di raccordo, smussi, filettature.\n"
+                                "- includi le dimensioni principali annotate sul disegno: diametri (Ø), "
+                                "lunghezze, larghezze, altezze, angoli, raggi — solo quelle leggibili sul disegno stesso, "
+                                "non nel cartiglio.\n"
+                                "- usa lessico meccanico canonico con sinonimi (es. scanalatura/gola, gradino/spalla, "
+                                "smusso/chamfer, raccordo/fillet).\n"
+                                "- NON leggere né menzionare codici, numeri di disegno, revisioni, materiali o "
+                                "qualsiasi informazione proveniente dal cartiglio in basso a destra.\n"
+                                "- rispondi in al massimo 5 frasi, per un totale massimo di 1000 caratteri."
                             ),
                         },
                         {
@@ -1641,7 +1651,7 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
 
         caption = resp.choices[0].message.content.strip()
 
-        MAX_CAPTION_CHARS = 1024
+        MAX_CAPTION_CHARS = 1200
         if len(caption) > MAX_CAPTION_CHARS:
             caption = caption[:MAX_CAPTION_CHARS]
 
