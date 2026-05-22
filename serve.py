@@ -83,7 +83,7 @@ def _pdf_bytes_to_png_base64(file_bytes: bytes) -> Optional[str]:
             return None
 
         page = pdf[0]
-        bitmap = page.render(scale=2).to_pil()
+        bitmap = page.render(scale=3).to_pil()
         from io import BytesIO
 
         buffer = BytesIO()
@@ -1605,13 +1605,14 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
                         "Riceverai immagini di tavole tecniche con pezzi meccanici. "
                         "Devi produrre una descrizione geometrica e dimensionale ottimizzata per ricerca ibrida "
                         "(BM25 + vettoriale). "
-                        "Considera la geometria del pezzo E le quote dimensionali annotate direttamente sul disegno "
-                        "(diametri, lunghezze, angoli, raggi indicati con linee di quota). "
+                        "Considera ESCLUSIVAMENTE la geometria del pezzo e le quote dimensionali "
+                        "(diametri, lunghezze, angoli, raggi) scritte direttamente accanto alle linee di quota sul disegno. "
+                        "Queste sono le UNICHE scritte che devi leggere e riportare. "
                         "Non inferire, non ipotizzare, non aggiungere dettagli non osservabili. "
-                        "IGNORA COMPLETAMENTE il cartiglio, che si trova nell'angolo in basso a destra del foglio: "
-                        "non leggere né usare il numero disegno, la revisione, il titolo, il materiale, "
-                        "la data, il nome del progettista o qualsiasi altro campo del cartiglio. "
-                        "Ignora anche intestazioni, note, riferimenti e simboli non geometrici."
+                        "Ignora qualsiasi altro testo presente nel foglio: "
+                        "IGNORA COMPLETAMENTE il cartiglio in basso a destra (numero disegno, revisione, titolo, "
+                        "materiale, data, progettista), intestazioni, note, riferimenti, simboli di tolleranza, "
+                        "rugosità, saldatura e qualsiasi annotazione che non sia una quota dimensionale sul disegno."
                     ),
                 },
                 {
@@ -1620,21 +1621,20 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
                         {
                             "type": "text",
                             "text": (
-                                "Osserva il disegno tecnico (ignorando il cartiglio in basso a destra) "
-                                "e descrivi la geometria del pezzo e le sue dimensioni principali.\n\n"
+                                "Osserva il disegno tecnico e descrivi la geometria del pezzo "
+                                "e le sue dimensioni principali.\n\n"
                                 "Se ci sono più viste (frontale, laterale, sezione), usale tutte per ricostruire "
                                 "la geometria completa.\n\n"
                                 "Linee guida:\n"
                                 "- descrivi le invarianti geometriche: corpo cilindrico/prismatico/cavo, "
                                 "fori passanti/ciechi, gradini, spalle, conicità, simmetrie, scanalature, "
                                 "raggi di raccordo, smussi, filettature.\n"
-                                "- includi le dimensioni principali annotate sul disegno: diametri (Ø), "
-                                "lunghezze, larghezze, altezze, angoli, raggi — solo quelle leggibili sul disegno stesso, "
-                                "non nel cartiglio.\n"
+                                "- includi le dimensioni annotate direttamente sul disegno tramite linee di quota: "
+                                "diametri (Ø), lunghezze, larghezze, altezze, angoli, raggi. "
+                                "Sono le UNICHE scritte da considerare. Tutto il resto (cartiglio, note, tabelle, "
+                                "simboli di tolleranza, rugosità, saldatura) va completamente ignorato.\n"
                                 "- usa lessico meccanico canonico con sinonimi (es. scanalatura/gola, gradino/spalla, "
                                 "smusso/chamfer, raccordo/fillet).\n"
-                                "- NON leggere né menzionare codici, numeri di disegno, revisioni, materiali o "
-                                "qualsiasi informazione proveniente dal cartiglio in basso a destra.\n"
                                 "- rispondi in al massimo 5 frasi, per un totale massimo di 1000 caratteri."
                             ),
                         },
