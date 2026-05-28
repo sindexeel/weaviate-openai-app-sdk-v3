@@ -11,177 +11,9 @@ from functools import lru_cache
 from urllib.parse import urlparse
 import mcp.types as types
 
-# Monkey-patch uvicorn.run() PRIMA che FastMCP lo importi
-# Questo forza host=0.0.0.0 e port=PORT per Render
-def _patch_uvicorn_for_render():
-    """Patch uvicorn.run() e uvicorn.Server per forzare host e port corretti su Render."""
-    try:
-        import uvicorn
-        # Leggi PORT dall'environment (Render la imposta automaticamente)
-        render_port = int(os.environ.get("PORT", "10000"))
-        render_host = "0.0.0.0"
-
-        # Salva le funzioni originali
-        original_run = uvicorn.run
-        original_server_init = None
-        original_config_init = None
-
-        try:
-            original_server_init = uvicorn.Server.__init__
-        except:
-            pass
-
-        try:
-            original_config_init = uvicorn.Config.__init__
-        except:
-            pass
-
-        def patched_run(*args, **kwargs):
-            # FORZA host e port per Render, intercettando qualsiasi chiamata
-            # Gestisce sia chiamate con argomenti posizionali che keyword
-            print(f"[mcp] patched uvicorn.run() intercepted")
-            print(f"[mcp] args: {args}, kwargs: {kwargs}")
-
-            # Estrai app dal primo argomento posizionale
-            app = args[0] if args else kwargs.get("app")
-
-            # FORZA host e port, ignorando qualsiasi valore passato
-            kwargs["host"] = render_host
-            kwargs["port"] = render_port
-
-            # Rimuovi host e port da args se erano passati come posizionali (args[1], args[2])
-            if len(args) > 1:
-                print(
-                    f"[mcp] original positional args: host={args[1] if len(args) > 1 else None}, port={args[2] if len(args) > 2 else None}"
-                )
-
-            print(f"[mcp] FORCING host={render_host}, port={render_port}")
-            return original_run(app, host=render_host, port=render_port, **kwargs)
-
-        def patched_server_init(self, config=None, **kwargs):
-            """Patch uvicorn.Server.__init__ per forzare host e port."""
-            print(f"[mcp] patched uvicorn.Server.__init__ intercepted")
-            if config is not None:
-                # Se config è un oggetto Config, forza host e port
-                if hasattr(config, "host"):
-                    print(
-                        f"[mcp] Server config original host={config.host}, port={config.port}"
-                    )
-                    config.host = render_host
-                    config.port = render_port
-                    print(
-                        f"[mcp] Server config FORCED host={render_host}, port={render_port}"
-                    )
-                # Se config è un dict, forza host e port
-                elif isinstance(config, dict):
-                    config["host"] = render_host
-                    config["port"] = render_port
-                    print(
-                        f"[mcp] Server config dict FORCED host={render_host}, port={render_port}"
-                    )
-            # Forza anche nei kwargs
-            kwargs["host"] = render_host
-            kwargs["port"] = render_port
-            print(f"[mcp] Server init FORCING host={render_host}, port={render_port}")
-            if original_server_init:
-                return original_server_init(self, config, **kwargs)
-
-        def patched_config_init(self, app, **kwargs):
-            """Patch uvicorn.Config.__init__ per forzare host e port."""
-            print(f"[mcp] patched uvicorn.Config.__init__ intercepted")
-            kwargs["host"] = render_host
-            kwargs["port"] = render_port
-            print(f"[mcp] Config init FORCING host={render_host}, port={render_port}")
-            if original_config_init:
-                return original_config_init(self, app, **kwargs)
-
-        # Applica i patch
-        uvicorn.run = patched_run
-
-        # Patch anche se FastMCP fa "from uvicorn import run"
-        try:
-            import uvicorn.main
-
-            uvicorn.main.run = patched_run
-        except:
-            pass
-
-        # Patch uvicorn.Server se disponibile
-        if original_server_init:
-            uvicorn.Server.__init__ = patched_server_init
-            print(f"[mcp] uvicorn.Server.__init__ patched")
-
-        # Patch uvicorn.Config se disponibile
-        if original_config_init:
-            uvicorn.Config.__init__ = patched_config_init
-            print(f"[mcp] uvicorn.Config.__init__ patched")
-
-        print(
-            f"[mcp] uvicorn patched early for Render (host={render_host}, port={render_port})"
-        )
-    except ImportError:
-        # uvicorn non è ancora disponibile, verrà patchato dopo
-        pass
-
-
-def _patch_mcp_transport_security():
-    """
-    Allarga la whitelist degli host accettati dal middleware di sicurezza MCP
-    per evitare 'Invalid Host header' su Render.
-    """
-    try:
-        from mcp.server import transport_security as ts
-    except Exception as e:
-        print(f"[mcp] warning: cannot import transport_security: {e}")
-        return
-
-    public_url = (
-        os.environ.get("PUBLIC_URL")
-        or os.environ.get("BASE_URL")
-        or "https://weaviate-openai-app-sdk-v3.onrender.com"
-    )
-    public_host = urlparse(public_url).netloc
-
-    original_init = ts.TransportSecuritySettings.__init__
-
-    def patched_init(self, *args, **kwargs):
-        # chiama l'init originale
-        original_init(self, *args, **kwargs)
-
-        # Prende la lista esistente (se c'è) e la copia
-        try:
-            hosts = list(getattr(self, "allowed_hosts", []) or [])
-        except Exception:
-            hosts = []
-
-        extra_hosts = [
-            "localhost",
-            "localhost:*",
-            "127.0.0.1",
-            "127.0.0.1:*",
-        ]
-
-        if public_host:
-            # es: "weaviate-openai-app-sdk.onrender.com"
-            extra_hosts.append(public_host)
-            extra_hosts.append(f"{public_host}:*")
-
-        for h in extra_hosts:
-            if h not in hosts:
-                hosts.append(h)
-
-        self.allowed_hosts = hosts
-        print(f"[mcp] TransportSecuritySettings.allowed_hosts = {self.allowed_hosts}")
-
-    ts.TransportSecuritySettings.__init__ = patched_init
-    print("[mcp] patched MCP TransportSecuritySettings to allow Render host + localhost")
-
-
-# Applica i patch all'inizio
-_patch_uvicorn_for_render()
-_patch_mcp_transport_security()
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 from starlette.responses import JSONResponse
 
 # --- Weaviate client imports (v4) ---
@@ -611,8 +443,23 @@ SERVER_PORT = int(os.environ.get("PORT", "10000"))
 os.environ.setdefault("FASTMCP_PORT", str(SERVER_PORT))
 os.environ.setdefault("FASTMCP_HOST", "0.0.0.0")
 
-# Non passiamo host/port direttamente, lasciamo che FastMCP usi le env FASTMCP_*
-mcp = FastMCP(_MCP_SERVER_NAME, stateless_http=True)
+# Configura la transport security direttamente sul costruttore FastMCP (approccio ufficiale mcp 1.23+).
+# Necessario su Render: host=0.0.0.0 attiva la protezione DNS rebinding con allowed_hosts=[],
+# bloccando tutte le richieste con 421. Passiamo l'host pubblico esplicitamente.
+_transport_security = TransportSecuritySettings(
+    enable_dns_rebinding_protection=True,
+    allowed_hosts=[
+        "localhost",
+        "localhost:*",
+        "127.0.0.1",
+        "127.0.0.1:*",
+        _BASE_HOST,
+        f"{_BASE_HOST}:*",
+    ],
+)
+print(f"[mcp] TransportSecuritySettings.allowed_hosts = {_transport_security.allowed_hosts}")
+
+mcp = FastMCP(_MCP_SERVER_NAME, stateless_http=True, transport_security=_transport_security)
 
 
 def _apply_mcp_metadata():
