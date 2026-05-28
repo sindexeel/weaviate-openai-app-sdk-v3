@@ -11,9 +11,16 @@ const MCP_BASE_URL = (() => {
   }
 })();
 
-// Imposta a `true` per mostrare uuid, distance raw e bm25_score su ogni card.
+// Imposta a `true` per mostrare uuid, distance raw e bm25_score su ogni card
+// e le emoji ✅/❌ basate sui test case in public/test_cases.json.
 // Cambia questo valore nel codice, rebuilda e rideploya per attivare/disattivare.
 const DEBUG_MODE = true;
+
+type TestCase = {
+  input: string;
+  expected: string[];
+  unwanted: string[];
+};
 
 type SearchResult = {
   uuid?: string;
@@ -34,10 +41,44 @@ export const ImageSearchWidget: React.FC = () => {
   const [status, setStatus] = useState<string | null>(null);
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
+  const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [enlargedImage, setEnlargedImage] = useState<{
     src: string;
     alt: string;
   } | null>(null);
+
+  // Carica i test case dal JSON esterno (solo in debug mode)
+  useEffect(() => {
+    if (!DEBUG_MODE) return;
+    fetch(`${MCP_BASE_URL}/test_cases.json`)
+      .then((r) => r.json())
+      .then((data: TestCase[]) => setTestCases(data))
+      .catch(() => {});
+  }, []);
+
+  // Trova il test case corrispondente al file caricato (match parziale sul nome)
+  const activeTestCase = debugMode && file
+    ? testCases.find((tc) => file.name.includes(tc.input))
+    : null;
+
+  // Restituisce l'emoji di validazione per un risultato (null = non classificato)
+  const getTestEmoji = (name: string): "✅" | "❌" | null => {
+    if (!activeTestCase) return null;
+    if (name.includes(activeTestCase.input)) return "✅";
+    if (activeTestCase.expected.some((e) => name.includes(e))) return "✅";
+    if (activeTestCase.unwanted.some((u) => name.includes(u))) return "❌";
+    return null;
+  };
+
+  // Restituisce la label testuale per il pannello debug
+  const getTestLabel = (name: string): "expected" | "unwanted" | "neutral" | null => {
+    if (!activeTestCase) return null;
+    if (name.includes(activeTestCase.input)) return "expected";
+    if (activeTestCase.expected.some((e) => name.includes(e))) return "expected";
+    if (activeTestCase.unwanted.some((u) => name.includes(u))) return "unwanted";
+    return "neutral";
+  };
 
   // Chiudi il modal con ESC
   useEffect(() => {
@@ -183,7 +224,7 @@ export const ImageSearchWidget: React.FC = () => {
       }}
     >
       {/* Header */}
-      <div style={{ marginBottom: "24px", textAlign: "center" }}>
+      <div style={{ marginBottom: "24px", textAlign: "center", position: "relative" }}>
         <h1
           style={{
             margin: "0 0 8px 0",
@@ -203,6 +244,28 @@ export const ImageSearchWidget: React.FC = () => {
         >
           Carica un'immagine o un PDF per trovare progetti simili nella collezione Sinde3
         </p>
+        {DEBUG_MODE && (
+          <button
+            onClick={() => setDebugMode((d) => !d)}
+            title={debugMode ? "Disattiva modalità debug" : "Attiva modalità debug"}
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              padding: "4px 10px",
+              fontSize: "11px",
+              fontWeight: "600",
+              backgroundColor: debugMode ? "#fd7e14" : "#e9ecef",
+              color: debugMode ? "white" : "#495057",
+              border: "1px solid " + (debugMode ? "#e8690b" : "#ced4da"),
+              borderRadius: "6px",
+              cursor: "pointer",
+              letterSpacing: "0.05em",
+            }}
+          >
+            {debugMode ? "DEBUG ON" : "DEBUG"}
+          </button>
+        )}
       </div>
 
       {/* Upload Section */}
@@ -442,6 +505,11 @@ export const ImageSearchWidget: React.FC = () => {
                       color: "#1a1a1a",
                     }}
                   >
+                    {debugMode && getTestEmoji(r.properties.name) !== null && (
+                      <span style={{ marginRight: "6px" }}>
+                        {getTestEmoji(r.properties.name)}
+                      </span>
+                    )}
                     {r.properties.name}
                   </h3>
                 )}
@@ -461,7 +529,7 @@ export const ImageSearchWidget: React.FC = () => {
                       <strong>Tipo:</strong> {r.properties.mediaType}
                     </div>
                   )}
-                  {DEBUG_MODE ? (
+                  {debugMode ? (
                     <div
                       style={{
                         marginTop: "12px",
@@ -486,6 +554,20 @@ export const ImageSearchWidget: React.FC = () => {
                       )}
                       {typeof r.bm25_score === "number" && (
                         <div><strong>bm25_score:</strong> {r.bm25_score.toFixed(6)}</div>
+                      )}
+                      {r.properties?.name && getTestLabel(r.properties.name) !== null && (
+                        <div>
+                          <strong>output:</strong>{" "}
+                          <span style={{
+                            color:
+                              getTestLabel(r.properties.name) === "expected" ? "#198754" :
+                              getTestLabel(r.properties.name) === "unwanted" ? "#dc3545" :
+                              "#6c757d",
+                            fontWeight: "700",
+                          }}>
+                            {getTestLabel(r.properties.name)}
+                          </span>
+                        </div>
                       )}
                     </div>
                   ) : (

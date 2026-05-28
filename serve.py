@@ -83,7 +83,7 @@ def _pdf_bytes_to_png_base64(file_bytes: bytes) -> Optional[str]:
             return None
 
         page = pdf[0]
-        bitmap = page.render(scale=2).to_pil()
+        bitmap = page.render(scale=3).to_pil()
         from io import BytesIO
 
         buffer = BytesIO()
@@ -710,6 +710,19 @@ def image_search_widget_resource():
 @mcp.custom_route("/health", methods=["GET"])
 async def health(_request):
     return JSONResponse({"status": "ok", "service": "weaviate-mcp-http"})
+
+
+@mcp.custom_route("/test_cases.json", methods=["GET"])
+async def serve_test_cases(request):
+    from starlette.responses import Response
+    file_path = _WIDGET_DIST_DIR / "test_cases.json"
+    if not file_path.exists():
+        return JSONResponse({"error": "Not found"}, status_code=404)
+    return Response(
+        file_path.read_text(encoding="utf-8"),
+        media_type="application/json",
+        headers={"Cache-Control": "no-cache"},
+    )
 
 
 @mcp.custom_route("/assets/{file_path:path}", methods=["GET"])
@@ -1583,19 +1596,27 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
         resp = _OPENAI_CLIENT.chat.completions.create(
             model="gpt-4.1-mini",
             temperature=0,
-            max_tokens=350,
+            max_tokens=450,
             messages=[
                 {
                     "role": "system",
                     "content": (
                         "Sei un esperto di disegno meccanico e information retrieval. "
                         "Riceverai immagini di tavole tecniche con pezzi meccanici. "
-                        "Devi produrre una descrizione geometrica ottimizzata per ricerca ibrida "
+                        "Devi produrre una descrizione geometrica e dimensionale ottimizzata per ricerca ibrida "
                         "(BM25 + vettoriale). "
-                        "Considera SOLO la geometria del pezzo. "
+                        "Considera ESCLUSIVAMENTE la geometria del pezzo e le quote dimensionali "
+                        "(diametri, lunghezze, angoli, raggi) scritte direttamente accanto alle linee di quota sul disegno. "
+                        "Queste sono le UNICHE scritte che devi leggere e riportare. "
+                        "Riporta solo il valore nominale delle quote (es. Ø90, 225 mm, M27×2). "
+                        "Non includere classi di tolleranza (H8, h7), scostamenti (±, +0,2/-0,1) né rugosità (Ra). "
                         "Non inferire, non ipotizzare, non aggiungere dettagli non osservabili. "
-                        "Ignora completamente testo, numeri, quote, simboli di quotatura, tolleranze, "
-                        "cartiglio, intestazioni, note, riferimenti e qualsiasi annotazione non geometrica."
+                        "Non usare il nome commerciale o il titolo del pezzo (es. bussola, flangia, perno) "
+                        "se compare solo nel cartiglio: descrivi solo geometria e quote sul disegno. "
+                        "Ignora qualsiasi altro testo presente nel foglio: "
+                        "IGNORA COMPLETAMENTE il cartiglio in basso a destra (numero disegno, revisione, titolo, "
+                        "materiale, data, progettista), intestazioni, note, riferimenti, "
+                        "rugosità, saldatura e qualsiasi annotazione che non sia una quota dimensionale sul disegno."
                     ),
                 },
                 {
@@ -1604,15 +1625,26 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
                         {
                             "type": "text",
                             "text": (
-                                "Osserva l'immagine e ricostruisci la geometria del pezzo. "
-                                "Se ci sono più viste (frontale/laterale/sezione), usale per ricostruire la geometria completa.\n\n"
-                                "Descrivi in linguaggio naturale e tecnico la geometria del pezzo.\n\n"
+                                "Osserva il disegno tecnico e descrivi la geometria del pezzo "
+                                "e le sue dimensioni principali.\n\n"
+                                "Se ci sono più viste (frontale, laterale, sezione), usale tutte per ricostruire "
+                                "la geometria completa.\n\n"
                                 "Linee guida:\n"
-                                "- privilegia invarianti geometriche: corpo cilindrico/cavo, foro passante, gradini, spalle, conicità, simmetrie, scanalature, raggi di raccordo, smussi.\n"
-                                "- usa lessico canonico meccanico e sinonimi (es. scanalatura anulare/circolare, gradino/spalla, smusso/chamfer).\n"
-                                "- non includere quote numeriche salvo angoli chiaramente leggibili (es. 30°, 15°).\n"
-                                "- escludi sempre testo, numeri, quote, cartiglio e qualsiasi elemento non geometrico visibile nella tavola.\n"
-                                "- rispondi in al massimo 4 frasi, per un totale massimo di 900 caratteri."
+                                "- descrivi le invarianti geometriche: corpo cilindrico/prismatico/cavo, "
+                                "fori passanti/ciechi, gradini, spalle, conicità, simmetrie, scanalature, "
+                                "raggi di raccordo, smussi, filettature.\n"
+                                "- includi le dimensioni annotate sul disegno tramite linee di quota: "
+                                "diametri (Ø), lunghezze, larghezze, altezze, angoli, raggi. "
+                                "Sono le UNICHE scritte da considerare. Per ogni quota riporta solo il valore nominale, "
+                                "senza classi o scostamenti. Tutto il resto (cartiglio, note, tabelle, rugosità, saldatura) "
+                                "va completamente ignorato.\n"
+                                "- non elencare tutte le quote visibili: riporta al massimo 6-8 dimensioni "
+                                "che caratterizzano il pezzo (lunghezza totale, diametri principali interno/esterno, "
+                                "1-2 angoli o smussi chiave). Ometti quote secondarie e ripetute tra viste.\n"
+                                "- non iniziare con il nome del componente dal cartiglio; usa solo descrizione geometrica.\n"
+                                "- usa lessico meccanico canonico con sinonimi (es. scanalatura/gola, gradino/spalla, "
+                                "smusso/chamfer, raccordo/fillet).\n"
+                                "- rispondi in al massimo 5 frasi, per un totale massimo di 1000 caratteri."
                             ),
                         },
                         {
@@ -1628,7 +1660,7 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
 
         caption = resp.choices[0].message.content.strip()
 
-        MAX_CAPTION_CHARS = 1024
+        MAX_CAPTION_CHARS = 1200
         if len(caption) > MAX_CAPTION_CHARS:
             caption = caption[:MAX_CAPTION_CHARS]
 
