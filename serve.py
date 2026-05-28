@@ -1,6 +1,7 @@
 # serve.py
 import os
 import json
+import re
 import time
 import uuid
 import base64
@@ -1297,26 +1298,40 @@ def hybrid_search(
         _update_client_grpc_metadata(client)
 
         if image_b64:
-            # 1️⃣ generiamo una descrizione testuale ad hoc per la query
-            query_caption = describe_image_for_query(image_b64)
-            # DEBUG: log completo della query per confronto con Colab
-            print(f"[DEBUG] query_caption FULL: {repr(query_caption)}")
-            print(f"[DEBUG] query_caption length: {len(query_caption) if query_caption else 0}")
-            if query_caption:
-                print(f"[hybrid_search] query_caption (len={len(query_caption)}): {query_caption[:120]}...")
+            # 1️⃣ descrizione shape-invariant ad hoc per la query (BM25 su caption+name)
+            drawing_caption = describe_mechanical_drawing(image_b64, mode="query")
+            shape_query = ""
+            if drawing_caption:
+                shape_query = _normalize_caption_for_search(
+                    drawing_caption.shape_caption
+                ).strip()
+                print(f"[DEBUG] shape_caption FULL: {repr(drawing_caption.shape_caption)}")
+                print(f"[DEBUG] dim_caption FULL: {repr(drawing_caption.dim_caption)}")
+                print(f"[DEBUG] normalized shape_query: {repr(shape_query)}")
+                if shape_query:
+                    print(
+                        f"[hybrid_search] shape_query (len={len(shape_query)}): "
+                        f"{shape_query[:120]}..."
+                    )
+                else:
+                    print("[hybrid_search] shape_caption vuota dopo normalizzazione")
             else:
-                print("[hybrid_search] nessuna query_caption generata, uso solo immagine")
+                print("[hybrid_search] nessuna descrizione GPT generata, uso fallback")
 
             # Evita query vuota: il vectorizer remoto di Weaviate risponde 400
             # ("No embedding input is provided") quando non riceve testo.
             fallback_query = (
                 query
+                or (
+                    drawing_caption.combined.strip()
+                    if drawing_caption and drawing_caption.combined.strip()
+                    else None
+                )
                 or "technical mechanical drawing component geometry"
             )
-            final_query = (query_caption or "").strip() or fallback_query
+            final_query = shape_query or fallback_query
 
-            # 2️⃣ usiamo SOLO la descrizione GPT come query testuale
-            #    ignoriamo completamente la query utente quando c'è un'immagine
+            # 2️⃣ query testuale shape-invariant (normalizzata); fallback su combined/query utente
             #    Weaviate genererà automaticamente il vettore dalla query se ha un vectorizer configurato
             hybrid_params: Dict[str, Any] = {
                 "query": final_query,
@@ -1584,68 +1599,199 @@ def _vertex_embed(
     raise RuntimeError("No embedding returned from Vertex AI")
 
 
-def describe_image_for_query(image_b64: str) -> Optional[str]:
+_DIMS_DELIMITER = "---DIMS---"
+_MAX_SHAPE_CAPTION_CHARS = 1000
+_MAX_DIM_CAPTION_CHARS = 400
+_MAX_COMBINED_CAPTION_CHARS = 1200
+
+
+@dataclass
+class MechanicalDrawingCaption:
+    shape_caption: str
+    dim_caption: str
+    combined: str
+
+
+def _normalize_caption_for_search(text: str) -> str:
     """
-    Usa GPT per generare una descrizione breve e tecnica del pezzo meccanico
-    nell'immagine di query, da usare come parte testuale del vettore Vertex.
+    Generalizza dimensioni assolute nel testo shape per ridurre mismatch BM25
+    su valori numerici specifici (es. Ø90 vs Ø120 tra pezzi simili).
+    """
+    if not text:
+        return text
+
+    result = text
+    result = re.sub(
+        r"\bM\d+(?:[×x]\d+(?:[.,]\d+)?)?\b",
+        "filettatura metrica",
+        result,
+        flags=re.IGNORECASE,
+    )
+    result = re.sub(
+        r"(?:Ø|⌀|phi\.?)\s*[\d.,]+",
+        "diametro",
+        result,
+        flags=re.IGNORECASE,
+    )
+    result = re.sub(
+        r"\d+(?:[.,]\d+)?\s*mm\b",
+        "dimensione mm",
+        result,
+        flags=re.IGNORECASE,
+    )
+    result = re.sub(r"\bR\s*[\d.,]+\b", "raggio", result, flags=re.IGNORECASE)
+    result = re.sub(r"\s+", " ", result).strip()
+    return result
+
+
+def _build_mechanical_drawing_combined(
+    shape_caption: str, dim_caption: str
+) -> str:
+    shape = shape_caption.strip()
+    dims = dim_caption.strip()
+    if shape and dims:
+        combined = f"{shape}\n\n{_DIMS_DELIMITER}\n{dims}"
+    else:
+        combined = shape or dims
+    if len(combined) > _MAX_COMBINED_CAPTION_CHARS:
+        combined = combined[:_MAX_COMBINED_CAPTION_CHARS]
+    return combined
+
+
+def _parse_mechanical_drawing_response(raw: str) -> MechanicalDrawingCaption:
+    shape_caption = ""
+    dim_caption = ""
+
+    text = (raw or "").strip()
+    if not text:
+        return MechanicalDrawingCaption("", "", "")
+
+    if _DIMS_DELIMITER in text:
+        parts = text.split(_DIMS_DELIMITER, 1)
+        shape_caption = parts[0].strip()
+        dim_caption = parts[1].strip() if len(parts) > 1 else ""
+    else:
+        try:
+            parsed = json.loads(text)
+            if isinstance(parsed, dict):
+                shape_caption = str(parsed.get("shape_caption") or "").strip()
+                dim_caption = str(parsed.get("dim_caption") or "").strip()
+        except json.JSONDecodeError:
+            json_match = re.search(r"\{[\s\S]*\}", text)
+            if json_match:
+                try:
+                    parsed = json.loads(json_match.group(0))
+                    if isinstance(parsed, dict):
+                        shape_caption = str(parsed.get("shape_caption") or "").strip()
+                        dim_caption = str(parsed.get("dim_caption") or "").strip()
+                except json.JSONDecodeError:
+                    pass
+        if not shape_caption and not dim_caption:
+            shape_caption = text
+
+    if len(shape_caption) > _MAX_SHAPE_CAPTION_CHARS:
+        shape_caption = shape_caption[:_MAX_SHAPE_CAPTION_CHARS]
+    if len(dim_caption) > _MAX_DIM_CAPTION_CHARS:
+        dim_caption = dim_caption[:_MAX_DIM_CAPTION_CHARS]
+
+    combined = _build_mechanical_drawing_combined(shape_caption, dim_caption)
+    return MechanicalDrawingCaption(
+        shape_caption=shape_caption,
+        dim_caption=dim_caption,
+        combined=combined,
+    )
+
+
+def _mechanical_drawing_system_prompt(mode: str) -> str:
+    index_hint = (
+        " In modalità index la shape_caption può essere leggermente più completa "
+        "(fino a 6 frasi) per arricchire la caption indicizzata."
+        if mode == "index"
+        else ""
+    )
+    return (
+        "Sei un esperto di disegno meccanico e information retrieval. "
+        "Riceverai immagini di tavole tecniche con pezzi meccanici. "
+        "Devi produrre output JSON con esattamente due campi:\n"
+        '- "shape_caption": descrizione geometrica shape-invariant, SENZA numeri assoluti '
+        "(niente mm, Ø, valori nominali di quota).\n"
+        '- "dim_caption": blocco opzionale con le quote dimensionali rilevate sul disegno '
+        "(solo valori nominali, es. Ø90, 225 mm, M27×2); stringa vuota se non utili.\n\n"
+        "Priorità per shape_caption:\n"
+        "- topologia: corpo prismatico/cilindrico/cavo, fori passanti/ciechi, gola/scanalatura, "
+        "simmetrie, spalle/gradini, conicità, raccordi/fillet, smussi/chamfer, filettature.\n"
+        "- proporzioni relative quando utili (es. 'gola semicircolare tra due bracci', "
+        "'lunghezza circa 2× diametro esterno', 'foro assiale centrato').\n"
+        "- de-prioritizza o evita valori assoluti mm/Ø nella descrizione principale.\n"
+        "- usa lessico meccanico canonico con sinonimi (scanalatura/gola, gradino/spalla, "
+        "smusso/chamfer, raccordo/fillet, cavo/foro assiale).\n\n"
+        "Per dim_caption:\n"
+        "- leggi SOLO quote accanto alle linee di quota sul disegno (diametri, lunghezze, angoli, raggi).\n"
+        "- riporta solo valori nominali; escludi tolleranze (H8, h7), scostamenti (±) e rugosità (Ra).\n"
+        "- al massimo 6-8 dimensioni caratteristiche; ometti quote secondarie e ripetute.\n\n"
+        "Non inferire dettagli non osservabili. Non usare nomi commerciali dal cartiglio "
+        "(bussola, flangia, perno) se compaiono solo lì. "
+        "Ignora cartiglio, note, tabelle, rugosità, saldatura e annotazioni non dimensionali."
+        f"{index_hint}"
+    )
+
+
+def _mechanical_drawing_user_prompt(mode: str) -> str:
+    if mode == "index":
+        shape_limit = (
+            "- shape_caption: al massimo 6 frasi, descrizione geometrica completa ma shape-invariant.\n"
+            "- dim_caption: fino a 8 quote principali con valori nominali."
+        )
+    else:
+        shape_limit = (
+            "- shape_caption: al massimo 4 frasi, concise e ottimizzate per ricerca ibrida BM25+vettoriale.\n"
+            "- dim_caption: solo quote essenziali (max 6), oppure stringa vuota."
+        )
+
+    return (
+        "Osserva il disegno tecnico e restituisci JSON con shape_caption e dim_caption.\n\n"
+        "Se ci sono più viste (frontale, laterale, sezione), usale tutte per ricostruire "
+        "la geometria completa.\n\n"
+        "Linee guida:\n"
+        "- shape_caption: descrivi SOLO invarianti geometriche e proporzioni relative, "
+        "senza numeri assoluti.\n"
+        "- dim_caption: riporta separatamente le quote nominali lette sul disegno.\n"
+        "- non iniziare con il nome del componente dal cartiglio.\n"
+        f"{shape_limit}\n"
+        "- rispondi SOLO con JSON valido, senza markdown."
+    )
+
+
+def describe_mechanical_drawing(
+    image_b64: str, mode: str = "query"
+) -> Optional[MechanicalDrawingCaption]:
+    """
+    Usa GPT per generare una descrizione strutturata del pezzo meccanico.
+    mode='query': caption concisa per ricerca; mode='index': leggermente più completa.
     """
     if _OPENAI_CLIENT is None:
         return None
+
+    if mode not in ("query", "index"):
+        mode = "query"
 
     try:
         resp = _OPENAI_CLIENT.chat.completions.create(
             model="gpt-4.1-mini",
             temperature=0,
-            max_tokens=450,
+            max_tokens=550,
+            response_format={"type": "json_object"},
             messages=[
                 {
                     "role": "system",
-                    "content": (
-                        "Sei un esperto di disegno meccanico e information retrieval. "
-                        "Riceverai immagini di tavole tecniche con pezzi meccanici. "
-                        "Devi produrre una descrizione geometrica e dimensionale ottimizzata per ricerca ibrida "
-                        "(BM25 + vettoriale). "
-                        "Considera ESCLUSIVAMENTE la geometria del pezzo e le quote dimensionali "
-                        "(diametri, lunghezze, angoli, raggi) scritte direttamente accanto alle linee di quota sul disegno. "
-                        "Queste sono le UNICHE scritte che devi leggere e riportare. "
-                        "Riporta solo il valore nominale delle quote (es. Ø90, 225 mm, M27×2). "
-                        "Non includere classi di tolleranza (H8, h7), scostamenti (±, +0,2/-0,1) né rugosità (Ra). "
-                        "Non inferire, non ipotizzare, non aggiungere dettagli non osservabili. "
-                        "Non usare il nome commerciale o il titolo del pezzo (es. bussola, flangia, perno) "
-                        "se compare solo nel cartiglio: descrivi solo geometria e quote sul disegno. "
-                        "Ignora qualsiasi altro testo presente nel foglio: "
-                        "IGNORA COMPLETAMENTE il cartiglio in basso a destra (numero disegno, revisione, titolo, "
-                        "materiale, data, progettista), intestazioni, note, riferimenti, "
-                        "rugosità, saldatura e qualsiasi annotazione che non sia una quota dimensionale sul disegno."
-                    ),
+                    "content": _mechanical_drawing_system_prompt(mode),
                 },
                 {
                     "role": "user",
                     "content": [
                         {
                             "type": "text",
-                            "text": (
-                                "Osserva il disegno tecnico e descrivi la geometria del pezzo "
-                                "e le sue dimensioni principali.\n\n"
-                                "Se ci sono più viste (frontale, laterale, sezione), usale tutte per ricostruire "
-                                "la geometria completa.\n\n"
-                                "Linee guida:\n"
-                                "- descrivi le invarianti geometriche: corpo cilindrico/prismatico/cavo, "
-                                "fori passanti/ciechi, gradini, spalle, conicità, simmetrie, scanalature, "
-                                "raggi di raccordo, smussi, filettature.\n"
-                                "- includi le dimensioni annotate sul disegno tramite linee di quota: "
-                                "diametri (Ø), lunghezze, larghezze, altezze, angoli, raggi. "
-                                "Sono le UNICHE scritte da considerare. Per ogni quota riporta solo il valore nominale, "
-                                "senza classi o scostamenti. Tutto il resto (cartiglio, note, tabelle, rugosità, saldatura) "
-                                "va completamente ignorato.\n"
-                                "- non elencare tutte le quote visibili: riporta al massimo 6-8 dimensioni "
-                                "che caratterizzano il pezzo (lunghezza totale, diametri principali interno/esterno, "
-                                "1-2 angoli o smussi chiave). Ometti quote secondarie e ripetute tra viste.\n"
-                                "- non iniziare con il nome del componente dal cartiglio; usa solo descrizione geometrica.\n"
-                                "- usa lessico meccanico canonico con sinonimi (es. scanalatura/gola, gradino/spalla, "
-                                "smusso/chamfer, raccordo/fillet).\n"
-                                "- rispondi in al massimo 5 frasi, per un totale massimo di 1000 caratteri."
-                            ),
+                            "text": _mechanical_drawing_user_prompt(mode),
                         },
                         {
                             "type": "image_url",
@@ -1658,17 +1804,20 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
             ],
         )
 
-        caption = resp.choices[0].message.content.strip()
-
-        MAX_CAPTION_CHARS = 1200
-        if len(caption) > MAX_CAPTION_CHARS:
-            caption = caption[:MAX_CAPTION_CHARS]
-
-        return caption
+        raw = (resp.choices[0].message.content or "").strip()
+        return _parse_mechanical_drawing_response(raw)
 
     except Exception as e:
-        print(f"[query-caption] errore nella descrizione immagine: {e}")
+        print(f"[query-caption] errore nella descrizione immagine ({mode}): {e}")
         return None
+
+
+def describe_image_for_query(image_b64: str) -> Optional[str]:
+    """Wrapper retrocompatibile: restituisce combined da describe_mechanical_drawing."""
+    result = describe_mechanical_drawing(image_b64, mode="query")
+    if result is None:
+        return None
+    return result.combined or None
 
 
 @mcp.tool()
@@ -1708,6 +1857,11 @@ def insert_image_vertex(
 
     if not image_b64:
         return {"error": "Either image_id or image_url must be provided"}
+
+    if caption is None:
+        generated = describe_mechanical_drawing(image_b64, mode="index")
+        if generated and generated.combined.strip():
+            caption = generated.combined.strip()
 
     vec = _vertex_embed(image_b64=image_b64, text=caption)
     client = _connect()
