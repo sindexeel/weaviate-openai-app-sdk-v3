@@ -34,6 +34,8 @@ type SearchResult = {
   };
   distance?: number;
   bm25_score?: number;
+  dim_similarity?: number;
+  combined_score?: number;
 };
 
 export const ImageSearchWidget: React.FC = () => {
@@ -352,6 +354,12 @@ export const ImageSearchWidget: React.FC = () => {
                       )}
                       {typeof r.bm25_score === "number" && (
                         <div><strong>bm25_score:</strong> {r.bm25_score.toFixed(6)}</div>
+                      )}
+                      {typeof r.dim_similarity === "number" && (
+                        <div><strong>dim_similarity:</strong> {r.dim_similarity.toFixed(4)}</div>
+                      )}
+                      {typeof r.combined_score === "number" && (
+                        <div><strong>combined_score:</strong> {r.combined_score.toFixed(6)}</div>
                       )}
                       {r.properties?.name && getTestLabel(r.properties.name) !== null && (
                         <div>

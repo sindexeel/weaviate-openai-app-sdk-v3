@@ -1297,6 +1297,7 @@ def hybrid_search(
         # Aggiorna i metadata gRPC prima della query per assicurarci che siano aggiornati
         _update_client_grpc_metadata(client)
 
+        drawing_caption: Optional[MechanicalDrawingCaption] = None
         if image_b64:
             # 1️⃣ descrizione shape-invariant ad hoc per la query (BM25 su caption+name)
             drawing_caption = describe_mechanical_drawing(image_b64, mode="query")
@@ -1413,7 +1414,13 @@ def hybrid_search(
                     "distance": distance,
                 }
             )
-        filtered = out # _filter_results_by_score_and_delta(out)
+        # Re-ranking proporzionale: penalizza pezzi con rapporti dimensionali diversi
+        query_dim_caption = (
+            drawing_caption.dim_caption
+            if image_b64 and drawing_caption
+            else ""
+        )
+        filtered = _rerank_by_proportional_dims(out, query_dim_caption)
         return {"count": len(filtered), "results": filtered}
     finally:
         client.close()
@@ -1610,6 +1617,85 @@ class MechanicalDrawingCaption:
     shape_caption: str
     dim_caption: str
     combined: str
+
+
+def _extract_numeric_dims(text: str) -> List[float]:
+    """
+    Estrae tutti i valori numerici da una stringa di dimensioni (dim_caption o
+    sezione dopo ---DIMS--- nel caption). Restituisce lista ordinata decrescente.
+    I valori di filettatura (M, G, UNC...) vengono ignorati — contano solo misure lineari/radiali.
+    """
+    # Rimuove token di filettatura (M10x1, G 3/8-19, UNC...) per non inquinare i rapporti
+    cleaned = re.sub(r"\b(?:M|G|UNC|BSP|BSW|NPT)\s*[\d./\-x×]+[^\s,]*", "", text, flags=re.IGNORECASE)
+    # Estrae tutti i float dopo Ø/⌀ o standalone
+    values = [float(m) for m in re.findall(r"[\d]+(?:[.,]\d+)?", cleaned.replace(",", "."))]
+    # Filtra valori irrilevanti (<1 o >2000) e deduplicati
+    values = sorted({v for v in values if 1.0 <= v <= 2000.0}, reverse=True)
+    return values
+
+
+def _proportional_dim_similarity(query_dims: List[float], result_dims: List[float]) -> float:
+    """
+    Similarità proporzionale scale-invariant tra due set di dimensioni.
+    Normalizza entrambi per il loro max (→ vettori in [0,1]) e calcola
+    la cosine similarity sul numero di componenti condivise.
+    Un rettangolo 2×5 e uno 12×30 → score ~1.0; un 5×2 vs 2×5 → score ~0.78.
+    Restituisce 1.0 se uno dei due set è vuoto (nessuna penalità senza dati).
+    """
+    if not query_dims or not result_dims:
+        return 1.0
+
+    def normalize(dims: List[float]) -> List[float]:
+        mx = dims[0]  # già ordinati desc
+        return [v / mx for v in dims]
+
+    q = normalize(query_dims)
+    r = normalize(result_dims)
+
+    # Allinea alla lunghezza minima (confronta solo le prime N dimensioni comuni)
+    n = min(len(q), len(r), 6)
+    q, r = q[:n], r[:n]
+
+    dot = sum(a * b for a, b in zip(q, r))
+    norm_q = sum(a * a for a in q) ** 0.5
+    norm_r = sum(b * b for b in r) ** 0.5
+    if norm_q == 0 or norm_r == 0:
+        return 1.0
+    return dot / (norm_q * norm_r)
+
+
+def _rerank_by_proportional_dims(
+    results: List[Dict], query_dim_caption: str, weight: float = 0.35
+) -> List[Dict]:
+    """
+    Re-ordina i risultati ibridi combinando lo score Weaviate con la similarità
+    proporzionale delle dimensioni. weight=0 disabilita il re-ranking.
+    Il combined_score è: (1-weight)*bm25_score + weight*dim_similarity*bm25_score
+                       = bm25_score * (1 - weight + weight*dim_sim)
+    Così un dim_sim=1.0 lascia invariato; dim_sim=0.0 riduce lo score di `weight`.
+    """
+    if weight <= 0 or not query_dim_caption:
+        return results
+
+    query_dims = _extract_numeric_dims(query_dim_caption)
+    if not query_dims:
+        return results
+
+    for item in results:
+        caption = (item.get("properties") or {}).get("caption", "") or ""
+        # Estrae la sezione dims dal caption salvato (dopo ---DIMS---)
+        if _DIMS_DELIMITER in caption:
+            dim_part = caption.split(_DIMS_DELIMITER, 1)[1]
+        else:
+            dim_part = caption
+        result_dims = _extract_numeric_dims(dim_part)
+        dim_sim = _proportional_dim_similarity(query_dims, result_dims)
+        base = item.get("bm25_score") or 0.0
+        item["dim_similarity"] = round(dim_sim, 4)
+        item["combined_score"] = round(base * (1.0 - weight + weight * dim_sim), 4)
+
+    results.sort(key=lambda x: x.get("combined_score", 0.0), reverse=True)
+    return results
 
 
 def _normalize_caption_for_search(text: str) -> str:
