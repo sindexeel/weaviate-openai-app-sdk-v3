@@ -902,7 +902,7 @@ async def image_search_http(request):
     collection = data.get("collection") or _get_default_collection()
     image_id = data.get("image_id")
     image_url = data.get("image_url")
-    limit = data.get("limit") or 20
+    limit = data.get("limit") or 50
 
     if not image_id and not image_url:
         return JSONResponse(
@@ -1789,62 +1789,81 @@ def _parse_mechanical_drawing_response(raw: str) -> MechanicalDrawingCaption:
 
 
 def _mechanical_drawing_system_prompt(mode: str) -> str:
-    index_hint = (
-        " In modalità index la shape_caption può essere leggermente più completa "
-        "(fino a 6 frasi) per arricchire la caption indicizzata."
-        if mode == "index"
-        else ""
-    )
+    if mode == "index":
+        shape_limit = (
+            "- shape_caption: da 4 a 6 frasi, struttura FISSA come da istruzioni, "
+            "descrizione completa per arricchire l'indice di ricerca."
+        )
+    else:
+        shape_limit = (
+            "- shape_caption: 3-4 frasi, stessa struttura FISSA ma più concisa, "
+            "ottimizzata per ricerca ibrida BM25+vettoriale."
+        )
+
     return (
         "Sei un esperto di disegno meccanico e information retrieval. "
         "Riceverai immagini di tavole tecniche con pezzi meccanici. "
-        "Devi produrre output JSON con esattamente due campi:\n"
-        '- "shape_caption": descrizione geometrica shape-invariant, SENZA numeri assoluti '
-        "(niente mm, Ø, valori nominali di quota).\n"
-        '- "dim_caption": blocco opzionale con le quote dimensionali rilevate sul disegno '
-        "(solo valori nominali, es. Ø90, 225 mm, M27×2); stringa vuota se non utili.\n\n"
-        "Priorità per shape_caption:\n"
-        "- topologia: corpo prismatico/cilindrico/cavo, fori passanti/ciechi, gola/scanalatura, "
-        "simmetrie, spalle/gradini, conicità, raccordi/fillet, smussi/chamfer, filettature.\n"
-        "- proporzioni relative quando utili (es. 'gola semicircolare tra due bracci', "
-        "'lunghezza circa 2× diametro esterno', 'foro assiale centrato').\n"
-        "- de-prioritizza o evita valori assoluti mm/Ø nella descrizione principale.\n"
-        "- usa lessico meccanico canonico con sinonimi (scanalatura/gola, gradino/spalla, "
-        "smusso/chamfer, raccordo/fillet, cavo/foro assiale).\n\n"
-        "Per dim_caption:\n"
-        "- leggi SOLO quote accanto alle linee di quota sul disegno (diametri, lunghezze, angoli, raggi).\n"
-        "- riporta solo valori nominali; escludi tolleranze (H8, h7), scostamenti (±) e rugosità (Ra).\n"
-        "- al massimo 6-8 dimensioni caratteristiche; ometti quote secondarie e ripetute.\n\n"
-        "Non inferire dettagli non osservabili. Non usare nomi commerciali dal cartiglio "
-        "(bussola, flangia, perno) se compaiono solo lì. "
-        "Ignora cartiglio, note, tabelle, rugosità, saldatura e annotazioni non dimensionali."
-        f"{index_hint}"
+        "Devi produrre output JSON con esattamente due campi: shape_caption e dim_caption.\n\n"
+
+        "=== SHAPE_CAPTION — struttura FISSA e OBBLIGATORIA ===\n"
+        "Descrivi sempre in questo ordine, senza saltare punti osservabili:\n\n"
+
+        "1. PROFILO ESTERNO (prima frase obbligatoria):\n"
+        "   - Se ha facce piatte (esagonale, quadrato, piatto...): "
+        "usa SEMPRE 'profilo esagonale esterno' / 'profilo quadrato esterno' / 'sezione prismatica'.\n"
+        "   - Se è tondo: 'profilo cilindrico circolare esterno'.\n"
+        "   - Se ha gradini esterni: aggiungi 'con gradini/spalle cilindriche concentriche'.\n"
+        "   - Indica conicità o rastrematura se presente.\n\n"
+
+        "2. CAVITÀ INTERNA (seconda frase obbligatoria se presente):\n"
+        "   - Foro passante o cieco; se ci sono più diametri interni: "
+        "'foro assiale con due/tre diametri distinti e spalla interna'.\n"
+        "   - Filettature: SEMPRE esplicita posizione e tipo: "
+        "'filettature interne metriche' / 'filettature interne gas (G)' / "
+        "'filettatura esterna metrica' / 'filettatura trapezoidale'.\n"
+        "   - Se non c'è cavità: ometti questa frase.\n\n"
+
+        "3. FEATURES SECONDARIE (una frase):\n"
+        "   - Gole (semicircolari, rettangolari), scanalature, cave di Seeger.\n"
+        "   - Smussi (chamfer) e raccordi (fillet/raggio): menziona solo se geometricamente rilevanti.\n"
+        "   - Simmetrie notevoli (assiale, radiale).\n\n"
+
+        "4. PROPORZIONI RELATIVE (una frase, se utili per distinguere il pezzo):\n"
+        "   - es. 'lunghezza totale circa doppia rispetto al diametro esterno maggiore'.\n"
+        "   - es. 'spessore parete sottile rispetto al diametro'.\n\n"
+
+        "REGOLE GENERALI per shape_caption:\n"
+        "- ZERO numeri assoluti (niente mm, Ø, valori nominali).\n"
+        "- Usa lessico canonico con sinonimi: scanalatura/gola, gradino/spalla, "
+        "smusso/chamfer, raccordo/fillet, cavo/foro assiale.\n"
+        "- Non usare nomi commerciali dal cartiglio (bussola, flangia, perno) "
+        "se compaiono solo nel cartiglio.\n\n"
+
+        "=== DIM_CAPTION ===\n"
+        "- Leggi SOLO quote con linee di quota visibili (diametri Ø, lunghezze, angoli, raggi, chiave CH).\n"
+        "- Includi filettature con passo se leggibili (es. M27×2, G 1¼-11).\n"
+        "- Riporta solo valori nominali; escludi tolleranze (H8, h7), scostamenti (±), rugosità (Ra).\n"
+        "- Massimo 8 quote caratteristiche; ometti quote secondarie e ripetute.\n"
+        "- Stringa vuota se non ci sono quote leggibili.\n\n"
+
+        f"{shape_limit}\n"
+        "Ignora cartiglio, note, tabelle, rugosità, saldatura e annotazioni non dimensionali. "
+        "Non inferire dettagli non osservabili dalle viste disponibili."
     )
 
 
 def _mechanical_drawing_user_prompt(mode: str) -> str:
-    if mode == "index":
-        shape_limit = (
-            "- shape_caption: al massimo 6 frasi, descrizione geometrica completa ma shape-invariant.\n"
-            "- dim_caption: fino a 8 quote principali con valori nominali."
-        )
-    else:
-        shape_limit = (
-            "- shape_caption: al massimo 4 frasi, concise e ottimizzate per ricerca ibrida BM25+vettoriale.\n"
-            "- dim_caption: solo quote essenziali (max 6), oppure stringa vuota."
-        )
-
     return (
         "Osserva il disegno tecnico e restituisci JSON con shape_caption e dim_caption.\n\n"
         "Se ci sono più viste (frontale, laterale, sezione), usale tutte per ricostruire "
         "la geometria completa.\n\n"
-        "Linee guida:\n"
-        "- shape_caption: descrivi SOLO invarianti geometriche e proporzioni relative, "
-        "senza numeri assoluti.\n"
-        "- dim_caption: riporta separatamente le quote nominali lette sul disegno.\n"
-        "- non iniziare con il nome del componente dal cartiglio.\n"
-        f"{shape_limit}\n"
-        "- rispondi SOLO con JSON valido, senza markdown."
+        "Segui RIGOROSAMENTE la struttura in 4 punti per shape_caption:\n"
+        "1. Profilo esterno (esagonale/cilindrico/prismatico + gradini se presenti)\n"
+        "2. Cavità interna + filettature (con tipo: metrica/gas/trapezoidale + posizione: interne/esterne)\n"
+        "3. Features secondarie (gole, smussi, raccordi, simmetrie)\n"
+        "4. Proporzioni relative\n\n"
+        "Per dim_caption: quote nominali lette sul disegno, massimo 8.\n\n"
+        "Rispondi SOLO con JSON valido, senza markdown."
     )
 
 
