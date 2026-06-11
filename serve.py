@@ -1297,56 +1297,32 @@ def hybrid_search(
         # Aggiorna i metadata gRPC prima della query per assicurarci che siano aggiornati
         _update_client_grpc_metadata(client)
 
-        drawing_caption: Optional[MechanicalDrawingCaption] = None
+        query_dim_values = ""
         if image_b64:
-            # 1️⃣ descrizione shape-invariant ad hoc per la query (BM25 su caption+name)
-            drawing_caption = describe_mechanical_drawing(image_b64, mode="query")
-            shape_query = ""
-            if drawing_caption:
-                shape_query = _normalize_caption_for_search(
-                    drawing_caption.shape_caption
-                ).strip()
-                print(f"[DEBUG] shape_caption FULL: {repr(drawing_caption.shape_caption)}")
-                print(f"[DEBUG] dim_caption FULL: {repr(drawing_caption.dim_caption)}")
-                print(f"[DEBUG] normalized shape_query: {repr(shape_query)}")
-                if shape_query:
-                    print(
-                        f"[hybrid_search] shape_query (len={len(shape_query)}): "
-                        f"{shape_query[:120]}..."
-                    )
-                else:
-                    print("[hybrid_search] shape_caption vuota dopo normalizzazione")
-            else:
-                print("[hybrid_search] nessuna descrizione GPT generata, uso fallback")
+            # Descrizione qualitativa pura (zero numeri) per BM25 + vettore
+            query_caption = _describe_mechanical_part_for_query(image_b64)
+            # Proporzioni normalizzate per il re-ranking dimensionale
+            query_dim_values = _extract_dim_values_for_query(image_b64)
 
-            # Evita query vuota: il vectorizer remoto di Weaviate risponde 400
-            # ("No embedding input is provided") quando non riceve testo.
-            fallback_query = (
-                query
-                or (
-                    drawing_caption.combined.strip()
-                    if drawing_caption and drawing_caption.combined.strip()
-                    else None
-                )
+            print(f"[DEBUG] query_caption (len={len(query_caption)}): {query_caption[:120]}...")
+            print(f"[DEBUG] query_dim_values: {query_dim_values}")
+
+            final_query = (
+                query_caption
+                or query
                 or "technical mechanical drawing component geometry"
             )
-            final_query = shape_query or fallback_query
 
-            # 2️⃣ query testuale shape-invariant (normalizzata); fallback su combined/query utente
-            #    Weaviate genererà automaticamente il vettore dalla query se ha un vectorizer configurato
             hybrid_params: Dict[str, Any] = {
                 "query": final_query,
                 "alpha": alpha,
                 "limit": limit,
-                # NON passiamo più "vector": il vettore verrà generato automaticamente da Weaviate dalla query
-                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64", "dim_values"],
                 "return_metadata": MetadataQuery(score=True, distance=True),
             }
-            # Quando c'è un'immagine, limita BM25 a caption e name come nel Colab
             hybrid_params["query_properties"] = ["caption", "name"]
-            
-            # DEBUG: log dei parametri prima della chiamata
-            print(f"[DEBUG] hybrid_params: query={repr(hybrid_params['query'])}, alpha={hybrid_params['alpha']}, limit={hybrid_params['limit']}, query_properties={hybrid_params['query_properties']}")
+
+            print(f"[DEBUG] hybrid_params: query={repr(hybrid_params['query'][:80])}, alpha={hybrid_params['alpha']}, limit={hybrid_params['limit']}")
 
             try:
                 resp = coll.query.hybrid(**hybrid_params)
@@ -1373,6 +1349,7 @@ def hybrid_search(
                             "page_index",
                             "mediaType",
                             "image_b64",
+                            "dim_values",
                         ],
                         return_metadata=MetadataQuery(score=True),
                     )
@@ -1414,13 +1391,7 @@ def hybrid_search(
                     "distance": distance,
                 }
             )
-        # Re-ranking proporzionale: penalizza pezzi con rapporti dimensionali diversi
-        query_dim_caption = (
-            drawing_caption.dim_caption
-            if image_b64 and drawing_caption
-            else ""
-        )
-        filtered = _rerank_by_proportional_dims(out, query_dim_caption)
+        filtered = _rerank_by_proportional_dims(out, query_dim_values if image_b64 else "")
         return {"count": len(filtered), "results": filtered}
     finally:
         client.close()
@@ -1606,6 +1577,119 @@ def _vertex_embed(
     raise RuntimeError("No embedding returned from Vertex AI")
 
 
+def _describe_mechanical_part_for_query(image_b64: str) -> str:
+    """Descrizione qualitativa pura per la query — zero numeri assoluti."""
+    if _OPENAI_CLIENT is None:
+        return ""
+    try:
+        resp = _OPENAI_CLIENT.chat.completions.create(
+            model="gpt-4.1-mini",
+            temperature=0,
+            max_tokens=400,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Sei un esperto di disegno meccanico e information retrieval. "
+                        "Descrivi la geometria del pezzo meccanico in modo ottimizzato per ricerca ibrida "
+                        "(BM25 + vettoriale).\n\n"
+                        "REGOLA FONDAMENTALE: non usare MAI numeri assoluti (mm, Ø, valori di quota). "
+                        "Descrivi solo invarianti geometriche e proporzioni relative.\n\n"
+                        "STRUTTURA — 4 frasi:\n"
+                        "1. PROFILO ESTERNO: facce piatte → profilo esagonale/quadrato/prismatico; "
+                        "sezione tonda → profilo cilindrico circolare. Gradini/spalle se presenti.\n"
+                        "2. CAVITA INTERNA: foro passante/cieco, diametri distinti, spalle interne. "
+                        "Filettature: interna metrica / esterna metrica / gas interna.\n"
+                        "3. FEATURES SECONDARIE: gole, scanalature, cave di Seeger, smussi, raccordi.\n"
+                        "4. PROPORZIONI RELATIVE: es. lunghezza circa doppia rispetto al diametro esterno.\n\n"
+                        "NON usare numeri. Rispondi solo con le 4 frasi, senza markdown."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Descrivi il pezzo meccanico. 4 frasi, nessun numero assoluto.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/png;base64,{image_b64}"},
+                        },
+                    ],
+                },
+            ],
+        )
+        caption = (resp.choices[0].message.content or "").strip()
+        return caption[:800] if len(caption) > 800 else caption
+    except Exception as e:
+        print(f"[query-caption] errore describe_mechanical_part: {e}")
+        return ""
+
+
+def _extract_dim_values_for_query(image_b64: str) -> str:
+    """
+    Estrae le dimensioni principali e le normalizza rispetto al massimo.
+    [100, 50, 20] → '1.0, 0.5, 0.2'  (scale-invariant, compatibile con dim_values in Sinde4)
+    """
+    if _OPENAI_CLIENT is None:
+        return ""
+    try:
+        resp = _OPENAI_CLIENT.chat.completions.create(
+            model="gpt-4.1-mini",
+            temperature=0,
+            max_tokens=60,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Sei un esperto di disegno meccanico. "
+                        "Identifica le dimensioni che definiscono la forma geometrica principale del pezzo. "
+                        "Ignora tolleranze, filettature, smussi, raggi e quote secondarie. "
+                        "Restituisci SOLO i valori numerici in ordine decrescente, separati da virgola, "
+                        "senza unita di misura. Massimo 6 valori. "
+                        "Se non vedi quote leggibili, restituisci stringa vuota."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Dimensioni principali della forma geometrica, ordine decrescente, solo numeri separati da virgola.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/png;base64,{image_b64}"},
+                        },
+                    ],
+                },
+            ],
+        )
+        raw = (resp.choices[0].message.content or "").strip()
+        if not raw:
+            return ""
+        nums = [float(x.replace(",", ".")) for x in re.findall(r"[\d]+(?:[.,]\d+)?", raw)]
+        nums = sorted([v for v in nums if v > 0], reverse=True)[:6]
+        if not nums:
+            return ""
+        mx = nums[0]
+        return ", ".join(str(round(v / mx, 4)) for v in nums)
+    except Exception as e:
+        print(f"[query-caption] errore extract_dim_values: {e}")
+        return ""
+
+
+def _parse_normalized_dims(dim_values_str: str) -> List[float]:
+    """Parsa '1.0, 0.5, 0.2' → [1.0, 0.5, 0.2]. Valori già normalizzati."""
+    if not dim_values_str:
+        return []
+    try:
+        return [float(x.strip()) for x in dim_values_str.split(",") if x.strip()]
+    except Exception:
+        return []
+
+
 _DIMS_DELIMITER = "---DIMS---"
 _MAX_SHAPE_CAPTION_CHARS = 1000
 _MAX_DIM_CAPTION_CHARS = 400
@@ -1665,30 +1749,23 @@ def _proportional_dim_similarity(query_dims: List[float], result_dims: List[floa
 
 
 def _rerank_by_proportional_dims(
-    results: List[Dict], query_dim_caption: str, weight: float = 0.35
+    results: List[Dict], query_dim_values: str, weight: float = 0.35
 ) -> List[Dict]:
     """
     Re-ordina i risultati ibridi combinando lo score Weaviate con la similarità
     proporzionale delle dimensioni. weight=0 disabilita il re-ranking.
-    Il combined_score è: (1-weight)*bm25_score + weight*dim_similarity*bm25_score
-                       = bm25_score * (1 - weight + weight*dim_sim)
-    Così un dim_sim=1.0 lascia invariato; dim_sim=0.0 riduce lo score di `weight`.
+    query_dim_values: stringa normalizzata '1.0, 0.5, 0.2' (dal campo dim_values di Sinde4).
     """
-    if weight <= 0 or not query_dim_caption:
+    if weight <= 0 or not query_dim_values:
         return results
 
-    query_dims = _extract_numeric_dims(query_dim_caption)
+    query_dims = _parse_normalized_dims(query_dim_values)
     if not query_dims:
         return results
 
     for item in results:
-        caption = (item.get("properties") or {}).get("caption", "") or ""
-        # Estrae la sezione dims dal caption salvato (dopo ---DIMS---)
-        if _DIMS_DELIMITER in caption:
-            dim_part = caption.split(_DIMS_DELIMITER, 1)[1]
-        else:
-            dim_part = caption
-        result_dims = _extract_numeric_dims(dim_part)
+        dim_values_str = (item.get("properties") or {}).get("dim_values", "") or ""
+        result_dims = _parse_normalized_dims(dim_values_str)
         dim_sim = _proportional_dim_similarity(query_dims, result_dims)
         base = item.get("bm25_score") or 0.0
         item["dim_similarity"] = round(dim_sim, 4)
