@@ -34,6 +34,8 @@ type SearchResult = {
   };
   distance?: number;
   bm25_score?: number;
+  dim_similarity?: number;
+  combined_score?: number;
 };
 
 export const ImageSearchWidget: React.FC = () => {
@@ -214,54 +216,33 @@ export const ImageSearchWidget: React.FC = () => {
     }
   };
 
+  const getStatusClass = (): string => {
+    if (!status) return "status";
+    if (status.includes("Errore")) return "status status--error";
+    if (status.includes("completata")) return "status status--success";
+    return "status status--info";
+  };
+
+  const getTestLabelClass = (name: string): string => {
+    const label = getTestLabel(name);
+    if (label === "expected") return "test-label--expected";
+    if (label === "unwanted") return "test-label--unwanted";
+    return "test-label--neutral";
+  };
+
   return (
-    <div
-      style={{
-        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        maxWidth: "900px",
-        margin: "0 auto",
-        padding: "20px",
-      }}
-    >
+    <div className="widget-root">
       {/* Header */}
-      <div style={{ marginBottom: "24px", textAlign: "center", position: "relative" }}>
-        <h1
-          style={{
-            margin: "0 0 8px 0",
-            fontSize: "24px",
-            fontWeight: "600",
-            color: "#1a1a1a",
-          }}
-        >
-          Ricerca progetti Sinde3
-        </h1>
-        <p
-          style={{
-            margin: "0",
-            fontSize: "14px",
-            color: "#666",
-          }}
-        >
+      <div className="widget-header">
+        <h1 className="widget-title">Ricerca progetti Sinde3</h1>
+        <p className="widget-subtitle">
           Carica un'immagine o un PDF per trovare progetti simili nella collezione Sinde3
         </p>
         {DEBUG_MODE && (
           <button
             onClick={() => setDebugMode((d) => !d)}
             title={debugMode ? "Disattiva modalità debug" : "Attiva modalità debug"}
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              padding: "4px 10px",
-              fontSize: "11px",
-              fontWeight: "600",
-              backgroundColor: debugMode ? "#fd7e14" : "#e9ecef",
-              color: debugMode ? "white" : "#495057",
-              border: "1px solid " + (debugMode ? "#e8690b" : "#ced4da"),
-              borderRadius: "6px",
-              cursor: "pointer",
-              letterSpacing: "0.05em",
-            }}
+            className={`debug-btn${debugMode ? " debug-btn--active" : ""}`}
           >
             {debugMode ? "DEBUG ON" : "DEBUG"}
           </button>
@@ -269,174 +250,49 @@ export const ImageSearchWidget: React.FC = () => {
       </div>
 
       {/* Upload Section */}
-      <div
-        style={{
-          marginBottom: "24px",
-          padding: "20px",
-          border: "2px dashed #ddd",
-          borderRadius: "12px",
-          backgroundColor: "#fafafa",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ marginBottom: "12px" }}>
+      <div className="upload-section">
+        <div className="upload-actions">
           <input
             type="file"
             accept=".pdf,application/pdf,image/*"
             onChange={handleFileChange}
             id="file-input"
-            style={{ display: "none" }}
+            className="file-input-hidden"
           />
-          <label
-            htmlFor="file-input"
-            style={{
-              display: "inline-block",
-              padding: "12px 24px",
-              backgroundColor: "#007bff",
-              color: "white",
-              borderRadius: "8px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
-              transition: "background-color 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              if (!isLoading) e.currentTarget.style.backgroundColor = "#0056b3";
-            }}
-            onMouseLeave={(e) => {
-              if (!isLoading) e.currentTarget.style.backgroundColor = "#007bff";
-            }}
-          >
+          <label htmlFor="file-input" className="btn-select-file">
             {file ? "Cambia progetto" : "Seleziona progetto"}
           </label>
         </div>
         {file && (
-          <div style={{ marginTop: "12px", fontSize: "13px", color: "#666" }}>
+          <div className="file-selected">
             Progetto selezionato: <strong>{file.name}</strong>
           </div>
         )}
         <button
           onClick={handleUploadAndSearch}
           disabled={!file || isLoading}
-          style={{
-            marginTop: "12px",
-            padding: "12px 32px",
-            backgroundColor: file && !isLoading ? "#28a745" : "#ccc",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            fontSize: "14px",
-            fontWeight: "500",
-            cursor: file && !isLoading ? "pointer" : "not-allowed",
-            transition: "background-color 0.2s",
-          }}
-          onMouseEnter={(e) => {
-            if (file && !isLoading) {
-              e.currentTarget.style.backgroundColor = "#218838";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (file && !isLoading) {
-              e.currentTarget.style.backgroundColor = "#28a745";
-            }
-          }}
+          className="btn-search"
         >
           {isLoading ? "Ricerca in corso..." : "Cerca progetti simili"}
         </button>
       </div>
 
       {/* Status */}
-      {status && (
-        <div
-          style={{
-            marginBottom: "24px",
-            padding: "12px 16px",
-            borderRadius: "8px",
-            backgroundColor: status.includes("Errore")
-              ? "#f8d7da"
-              : status.includes("completata")
-              ? "#d4edda"
-              : "#d1ecf1",
-            color: status.includes("Errore")
-              ? "#721c24"
-              : status.includes("completata")
-              ? "#155724"
-              : "#0c5460",
-            fontSize: "14px",
-          }}
-        >
-          {status}
-        </div>
-      )}
+      {status && <div className={getStatusClass()}>{status}</div>}
 
       {/* Results Grid */}
       {results && results.length > 0 && (
-        <div style={{ marginTop: "24px" }}>
-          <h2
-            style={{
-              margin: "0 0 16px 0",
-              fontSize: "20px",
-              fontWeight: "600",
-              color: "#1a1a1a",
-            }}
-          >
-            Progetti trovati ({results.length})
-          </h2>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-              gap: "16px",
-            }}
-          >
+        <div className="results-section">
+          <h2 className="results-title">Progetti trovati ({results.length})</h2>
+          <div className="results-grid">
             {results.map((r, idx) => (
-              <div
-                key={idx}
-                style={{
-                  border: "1px solid #e0e0e0",
-                  borderRadius: "12px",
-                  padding: "16px",
-                  backgroundColor: "white",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                  e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.15)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "12px",
-                    color: "#666",
-                    marginBottom: "8px",
-                    fontFamily: "monospace",
-                  }}
-                >
-                  #{idx + 1}
-                </div>
-                
+              <div key={idx} className="result-card">
+                <div className="result-index">#{idx + 1}</div>
+
                 {/* Anteprima immagine da image_b64 */}
                 {r.properties?.image_b64 && (
                   <div
-                    style={{
-                      marginBottom: "12px",
-                      borderRadius: "8px",
-                      overflow: "hidden",
-                      backgroundColor: "#f5f5f5",
-                      border: "1px solid #e0e0e0",
-                      minHeight: "150px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      position: "relative",
-                      cursor: "pointer",
-                      transition: "transform 0.2s, box-shadow 0.2s",
-                    }}
+                    className="result-preview"
                     onClick={() => {
                       if (r.properties?.image_b64) {
                         setEnlargedImage({
@@ -445,66 +301,23 @@ export const ImageSearchWidget: React.FC = () => {
                         });
                       }
                     }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = "scale(1.02)";
-                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "scale(1)";
-                      e.currentTarget.style.boxShadow = "none";
-                    }}
                   >
                     <img
                       src={`data:image/png;base64,${r.properties.image_b64}`}
                       alt={r.properties?.name || `Anteprima pagina ${r.properties?.page_index || ""}`}
-                      style={{
-                        width: "100%",
-                        height: "auto",
-                        display: "block",
-                        maxHeight: "200px",
-                        objectFit: "contain",
-                        pointerEvents: "none",
-                      }}
                       onError={(e) => {
-                        // Se l'immagine fallisce, nascondi il container
                         const parent = e.currentTarget.parentElement;
                         if (parent) {
                           parent.style.display = "none";
                         }
                       }}
                     />
-                    {/* Icona zoom sovrapposta */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: "8px",
-                        right: "8px",
-                        backgroundColor: "rgba(0, 0, 0, 0.6)",
-                        borderRadius: "50%",
-                        width: "32px",
-                        height: "32px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "white",
-                        fontSize: "16px",
-                        pointerEvents: "none",
-                      }}
-                    >
-                      🔍
-                    </div>
+                    <div className="preview-zoom-icon">🔍</div>
                   </div>
                 )}
-                
+
                 {r.properties?.name && (
-                  <h3
-                    style={{
-                      margin: "0 0 12px 0",
-                      fontSize: "16px",
-                      fontWeight: "600",
-                      color: "#1a1a1a",
-                    }}
-                  >
+                  <h3 className="result-name">
                     {debugMode && getTestEmoji(r.properties.name) !== null && (
                       <span style={{ marginRight: "6px" }}>
                         {getTestEmoji(r.properties.name)}
@@ -513,38 +326,25 @@ export const ImageSearchWidget: React.FC = () => {
                     {r.properties.name}
                   </h3>
                 )}
-                <div style={{ fontSize: "13px", color: "#555", lineHeight: "1.6" }}>
+                <div className="result-details">
                   {r.properties?.source_pdf && (
-                    <div style={{ marginBottom: "6px" }}>
+                    <div className="result-detail-row">
                       <strong>PDF:</strong> {r.properties.source_pdf}
                     </div>
                   )}
                   {typeof r.properties?.page_index === "number" && (
-                    <div style={{ marginBottom: "6px" }}>
+                    <div className="result-detail-row">
                       <strong>Pagina:</strong> {r.properties.page_index}
                     </div>
                   )}
                   {r.properties?.mediaType && (
-                    <div style={{ marginBottom: "6px" }}>
+                    <div className="result-detail-row">
                       <strong>Tipo:</strong> {r.properties.mediaType}
                     </div>
                   )}
                   {debugMode ? (
-                    <div
-                      style={{
-                        marginTop: "12px",
-                        padding: "8px 10px",
-                        backgroundColor: "#fff3cd",
-                        border: "1px solid #ffc107",
-                        borderRadius: "6px",
-                        fontSize: "11px",
-                        fontFamily: "monospace",
-                        lineHeight: "1.8",
-                      }}
-                    >
-                      <div style={{ fontWeight: "700", marginBottom: "4px", color: "#856404" }}>
-                        DEBUG
-                      </div>
+                    <div className="debug-panel">
+                      <div className="debug-panel-title">DEBUG</div>
                       <div><strong>uuid:</strong> {r.uuid ?? "—"}</div>
                       {typeof r.distance === "number" && (
                         <>
@@ -555,16 +355,16 @@ export const ImageSearchWidget: React.FC = () => {
                       {typeof r.bm25_score === "number" && (
                         <div><strong>bm25_score:</strong> {r.bm25_score.toFixed(6)}</div>
                       )}
+                      {typeof r.dim_similarity === "number" && (
+                        <div><strong>dim_similarity:</strong> {r.dim_similarity.toFixed(4)}</div>
+                      )}
+                      {typeof r.combined_score === "number" && (
+                        <div><strong>combined_score:</strong> {r.combined_score.toFixed(6)}</div>
+                      )}
                       {r.properties?.name && getTestLabel(r.properties.name) !== null && (
                         <div>
                           <strong>output:</strong>{" "}
-                          <span style={{
-                            color:
-                              getTestLabel(r.properties.name) === "expected" ? "#198754" :
-                              getTestLabel(r.properties.name) === "unwanted" ? "#dc3545" :
-                              "#6c757d",
-                            fontWeight: "700",
-                          }}>
+                          <span className={getTestLabelClass(r.properties.name)}>
                             {getTestLabel(r.properties.name)}
                           </span>
                         </div>
@@ -572,15 +372,7 @@ export const ImageSearchWidget: React.FC = () => {
                     </div>
                   ) : (
                     typeof r.distance === "number" && (
-                      <div
-                        style={{
-                          marginTop: "12px",
-                          padding: "6px 10px",
-                          backgroundColor: "#f0f0f0",
-                          borderRadius: "6px",
-                          fontSize: "12px",
-                        }}
-                      >
+                      <div className="similarity-badge">
                         <strong>Similarità:</strong> {(1 - r.distance).toFixed(3)}
                       </div>
                     )
@@ -593,84 +385,26 @@ export const ImageSearchWidget: React.FC = () => {
       )}
 
       {results && results.length === 0 && (
-        <div
-          style={{
-            marginTop: "24px",
-            padding: "24px",
-            textAlign: "center",
-            backgroundColor: "#f8f9fa",
-            borderRadius: "12px",
-            color: "#666",
-          }}
-        >
-          Nessun progetto trovato.
-        </div>
+        <div className="empty-results">Nessun progetto trovato.</div>
       )}
 
       {/* Modal per immagine ingrandita */}
       {enlargedImage && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.9)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10000,
-            padding: "20px",
-            cursor: "pointer",
-          }}
-          onClick={() => setEnlargedImage(null)}
-        >
-          {/* Pulsante chiudi */}
+        <div className="modal-overlay" onClick={() => setEnlargedImage(null)}>
           <button
             onClick={(e) => {
               e.stopPropagation();
               setEnlargedImage(null);
             }}
-            style={{
-              position: "absolute",
-              top: "20px",
-              right: "20px",
-              backgroundColor: "rgba(255, 255, 255, 0.2)",
-              border: "none",
-              borderRadius: "50%",
-              width: "40px",
-              height: "40px",
-              color: "white",
-              fontSize: "24px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              transition: "background-color 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)";
-            }}
+            className="modal-close"
             aria-label="Chiudi"
           >
             ×
           </button>
-
-          {/* Immagine ingrandita */}
           <img
             src={enlargedImage.src}
             alt={enlargedImage.alt}
-            style={{
-              maxWidth: "90%",
-              maxHeight: "90%",
-              objectFit: "contain",
-              borderRadius: "8px",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-            }}
+            className="modal-image"
             onClick={(e) => e.stopPropagation()}
           />
         </div>
