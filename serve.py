@@ -157,7 +157,7 @@ def _get_default_collection() -> str:
     Restituisce il nome della collection di default.
     Se WEAVIATE_DEFAULT_COLLECTION è impostata, usa quella; altrimenti 'Sinde3'.
     """
-    return os.environ.get("WEAVIATE_DEFAULT_COLLECTION", "Sinde3")
+    return os.environ.get("WEAVIATE_DEFAULT_COLLECTION", "Sinde4")
 
 
 def _get_default_alpha() -> float:
@@ -1297,15 +1297,11 @@ def hybrid_search(
         # Aggiorna i metadata gRPC prima della query per assicurarci che siano aggiornati
         _update_client_grpc_metadata(client)
 
-        query_dim_values = ""
         if image_b64:
-            # Descrizione qualitativa pura (zero numeri) per BM25 + vettore
+            # Descrizione CATEGORIA + geometria, allineata al formato di indicizzazione Sinde4
             query_caption = _describe_mechanical_part_for_query(image_b64)
-            # Proporzioni normalizzate per il re-ranking dimensionale
-            query_dim_values = _extract_dim_values_for_query(image_b64)
 
             print(f"[DEBUG] query_caption (len={len(query_caption)}): {query_caption[:120]}...")
-            print(f"[DEBUG] query_dim_values: {query_dim_values}")
 
             final_query = (
                 query_caption
@@ -1317,7 +1313,7 @@ def hybrid_search(
                 "query": final_query,
                 "alpha": alpha,
                 "limit": limit,
-                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64", "dim_values"],
+                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64"],
                 "return_metadata": MetadataQuery(score=True, distance=True),
             }
             hybrid_params["query_properties"] = ["caption", "name"]
@@ -1391,8 +1387,7 @@ def hybrid_search(
                     "distance": distance,
                 }
             )
-        filtered = _rerank_by_proportional_dims(out, query_dim_values if image_b64 else "")
-        return {"count": len(filtered), "results": filtered}
+        return {"count": len(out), "results": out}
     finally:
         client.close()
 
@@ -1578,31 +1573,28 @@ def _vertex_embed(
 
 
 def _describe_mechanical_part_for_query(image_b64: str) -> str:
-    """Descrizione qualitativa pura per la query — zero numeri assoluti."""
+    """Descrizione con CATEGORIA + geometria — allineata al formato di indicizzazione Sinde4."""
     if _OPENAI_CLIENT is None:
         return ""
     try:
         resp = _OPENAI_CLIENT.chat.completions.create(
             model="gpt-4.1-mini",
             temperature=0,
-            max_tokens=400,
+            max_tokens=450,
             messages=[
                 {
                     "role": "system",
                     "content": (
                         "Sei un esperto di disegno meccanico e information retrieval. "
-                        "Descrivi la geometria del pezzo meccanico in modo ottimizzato per ricerca ibrida "
-                        "(BM25 + vettoriale).\n\n"
-                        "REGOLA FONDAMENTALE: non usare MAI numeri assoluti (mm, Ø, valori di quota). "
-                        "Descrivi solo invarianti geometriche e proporzioni relative.\n\n"
-                        "STRUTTURA — 4 frasi:\n"
-                        "1. PROFILO ESTERNO: facce piatte → profilo esagonale/quadrato/prismatico; "
-                        "sezione tonda → profilo cilindrico circolare. Gradini/spalle se presenti.\n"
-                        "2. CAVITA INTERNA: foro passante/cieco, diametri distinti, spalle interne. "
-                        "Filettature: interna metrica / esterna metrica / gas interna.\n"
-                        "3. FEATURES SECONDARIE: gole, scanalature, cave di Seeger, smussi, raccordi.\n"
-                        "4. PROPORZIONI RELATIVE: es. lunghezza circa doppia rispetto al diametro esterno.\n\n"
-                        "NON usare numeri. Rispondi solo con le 4 frasi, senza markdown."
+                        "Descrivi il pezzo meccanico in modo ottimizzato per ricerca ibrida (BM25 + vettoriale).\n\n"
+                        "REGOLA: non usare MAI numeri assoluti (mm, Ø, valori di quota). "
+                        "Usa termini tecnici precisi e proporzioni relative.\n\n"
+                        "Rispondi ESATTAMENTE in questo formato (5 righe, nessun numero assoluto):\n"
+                        "CATEGORIA: classifica il pezzo in UNA di queste: "
+                        "boccola, perno, flangia, raccordo, distanziale, ghiera, dado, manicotto, "
+                        "tappo, pistone, albero, piastra, supporto, ingranaggio, bronzina, spina, "
+                        "vite, bussola, anello, sede. Se non corrisponde usa la più vicina.\n"
+                        "PROFILO ESTERNO: ...\nCAVITA INTERNA: ...\nFEATURES: ...\nPROPORZIONI: ..."
                     ),
                 },
                 {
@@ -1610,7 +1602,7 @@ def _describe_mechanical_part_for_query(image_b64: str) -> str:
                     "content": [
                         {
                             "type": "text",
-                            "text": "Descrivi il pezzo meccanico. 4 frasi, nessun numero assoluto.",
+                            "text": "Descrivi il pezzo nel formato richiesto. Nessun numero assoluto.",
                         },
                         {
                             "type": "image_url",
@@ -1621,7 +1613,7 @@ def _describe_mechanical_part_for_query(image_b64: str) -> str:
             ],
         )
         caption = (resp.choices[0].message.content or "").strip()
-        return caption[:800] if len(caption) > 800 else caption
+        return caption[:900] if len(caption) > 900 else caption
     except Exception as e:
         print(f"[query-caption] errore describe_mechanical_part: {e}")
         return ""
@@ -2357,7 +2349,7 @@ async def _list_tools() -> List[types.Tool]:
                 "properties": {
                     "collection": {
                         "type": "string",
-                        "description": "Nome della collection (sempre 'Sinde3' per questo assistente)",
+                        "description": "Nome della collection (sempre 'Sinde4' per questo assistente)",
                     },
                     "query": {
                         "type": "string",
@@ -2398,8 +2390,8 @@ async def _list_tools() -> List[types.Tool]:
             tool_title = "Ricerca ibrida (BM25 + vettoriale)"
             tool_description = (
                 "Esegue una ricerca ibrida combinando ricerca keyword (BM25) e ricerca vettoriale. "
-                "Tool principale per cercare nella collection Sinde3.\n\n"
-                "ISTRUZIONI: Usa SEMPRE collection='Sinde3'. Usa query_properties=['caption','name'] e "
+                "Tool principale per cercare nella collection Sinde4.\n\n"
+                "ISTRUZIONI: Usa SEMPRE collection='Sinde4'. Usa query_properties=['caption','name'] e "
                 "return_properties=['name','source_pdf','page_index','mediaType']. Mantieni alpha=0.2 e limit=20 "
                 "salvo richieste diverse. Per ricerche per immagini, usa image_id (da /upload-image) o image_url."
             )
