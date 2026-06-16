@@ -163,15 +163,15 @@ def _get_default_collection() -> str:
 def _get_default_alpha() -> float:
     """
     Restituisce l'alpha di default per hybrid_search.
-    Se HYBRID_DEFAULT_ALPHA è impostata (env), usa quella; altrimenti 0.2.
+    Se HYBRID_DEFAULT_ALPHA è impostata (env), usa quella; altrimenti 0.7.
     """
     val = os.environ.get("HYBRID_DEFAULT_ALPHA")
     if not val:
-        return 0.2
+        return 0.7
     try:
         return float(val)
     except (TypeError, ValueError):
-        return 0.2
+        return 0.7
 
 
 def _resolve_service_account_path() -> Optional[str]:
@@ -1298,8 +1298,8 @@ def hybrid_search(
         _update_client_grpc_metadata(client)
 
         if image_b64:
-            # Descrizione CATEGORIA + geometria, allineata al formato di indicizzazione Sinde4
-            query_caption = _describe_mechanical_part_for_query(image_b64)
+            # Stesso prompt usato per l'indicizzazione Sinde4 (PROFILO/CAVITÀ/FEATURES/DIMS)
+            query_caption = describe_image_for_query(image_b64) or ""
 
             print(f"[DEBUG] query_caption (len={len(query_caption)}): {query_caption[:120]}...")
 
