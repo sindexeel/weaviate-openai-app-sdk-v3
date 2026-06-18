@@ -1313,10 +1313,10 @@ def hybrid_search(
                 "query": final_query,
                 "alpha": alpha,
                 "limit": limit,
-                "return_properties": ["source_pdf", "page_index", "mediaType", "image_b64"],
+                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64"],
                 "return_metadata": MetadataQuery(score=True, distance=True),
             }
-            hybrid_params["query_properties"] = ["caption"]
+            hybrid_params["query_properties"] = ["caption", "name"]
 
             print(f"[DEBUG] hybrid_params: query={repr(hybrid_params['query'][:80])}, alpha={hybrid_params['alpha']}, limit={hybrid_params['limit']}")
 
@@ -1356,7 +1356,7 @@ def hybrid_search(
                 "query": query,
                 "alpha": alpha,
                 "limit": limit,
-                "return_properties": ["source_pdf", "page_index", "mediaType", "image_b64"],
+                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64"],
                 "return_metadata": MetadataQuery(score=True, distance=True),
             }
             if query_properties:
@@ -1573,28 +1573,37 @@ def _vertex_embed(
 
 
 def _describe_mechanical_part_for_query(image_b64: str) -> str:
-    """Descrizione con CATEGORIA + geometria — allineata al formato di indicizzazione Sinde4."""
+    """Descrizione SOLO geometrica del pezzo — zero numeri/testo/cartiglio."""
     if _OPENAI_CLIENT is None:
         return ""
     try:
         resp = _OPENAI_CLIENT.chat.completions.create(
             model="gpt-4.1-mini",
             temperature=0,
-            max_tokens=450,
+            max_tokens=400,
             messages=[
                 {
                     "role": "system",
                     "content": (
                         "Sei un esperto di disegno meccanico e information retrieval. "
-                        "Descrivi il pezzo meccanico in modo ottimizzato per ricerca ibrida (BM25 + vettoriale).\n\n"
-                        "REGOLA: non usare MAI numeri assoluti (mm, Ø, valori di quota). "
-                        "Usa termini tecnici precisi e proporzioni relative.\n\n"
-                        "Rispondi ESATTAMENTE in questo formato (5 righe, nessun numero assoluto):\n"
-                        "CATEGORIA: classifica il pezzo in UNA di queste: "
-                        "boccola, perno, flangia, raccordo, distanziale, ghiera, dado, manicotto, "
-                        "tappo, pistone, albero, piastra, supporto, ingranaggio, bronzina, spina, "
-                        "vite, bussola, anello, sede. Se non corrisponde usa la più vicina.\n"
-                        "PROFILO ESTERNO: ...\nCAVITA INTERNA: ...\nFEATURES: ...\nPROPORZIONI: ..."
+                        "Riceverai immagini di tavole tecniche con pezzi meccanici.\n\n"
+                        "DEVI descrivere ESCLUSIVAMENTE la geometria e la topologia del pezzo.\n\n"
+                        "IGNORA COMPLETAMENTE e NON menzionare MAI:\n"
+                        "- Qualsiasi numero, quota, dimensione, misura (mm, Ø, M, CH, angoli)\n"
+                        "- Qualsiasi testo scritto sul foglio\n"
+                        "- Il cartiglio (numero disegno, revisione, titolo, materiale, data, progettista)\n"
+                        "- Tolleranze, rugosità, saldature, note, tabelle, intestazioni\n"
+                        "- Nomi commerciali o codici prodotto\n\n"
+                        "STRUTTURA (max 3-4 frasi):\n"
+                        "1. PROFILO ESTERNO: cilindrico/prismatico/esagonale, gradini, spalle, conicità\n"
+                        "2. CAVITÀ INTERNA: foro passante/cieco, filettatura generica (metrica/gas)\n"
+                        "3. FEATURES: gole, scanalature, smussi, raccordi, simmetrie\n"
+                        "4. PROPORZIONI RELATIVE: rapporti geometrici senza numeri\n\n"
+                        "REGOLE:\n"
+                        "- Usa lessico canonico: scanalatura/gola, gradino/spalla, "
+                        "smusso/chamfer, raccordo/fillet\n"
+                        "- NON scrivere MAI numeri di nessun tipo\n"
+                        "- Rispondi SOLO con testo descrittivo, senza markdown"
                     ),
                 },
                 {
@@ -1602,7 +1611,9 @@ def _describe_mechanical_part_for_query(image_b64: str) -> str:
                     "content": [
                         {
                             "type": "text",
-                            "text": "Descrivi il pezzo nel formato richiesto. Nessun numero assoluto.",
+                            "text": "Descrivi SOLO la geometria del pezzo. "
+                                    "Non leggere nessuna scritta, nessun numero, nessun cartiglio. "
+                                    "Max 4 frasi.",
                         },
                         {
                             "type": "image_url",
@@ -1861,54 +1872,47 @@ def _mechanical_drawing_system_prompt(mode: str) -> str:
     frasi = "3-4 frasi descrittive" if mode == "query" else "4 frasi descrittive"
     return (
         "Sei un esperto di disegno meccanico e information retrieval. "
-        "Riceverai immagini di tavole tecniche con pezzi meccanici. "
-        "Devi produrre una descrizione geometrica ottimizzata per ricerca ibrida "
-        "(BM25 + vettoriale), seguita da una riga con le dimensioni principali.\n\n"
+        "Riceverai immagini di tavole tecniche con pezzi meccanici.\n\n"
+        "DEVI descrivere ESCLUSIVAMENTE la geometria e la topologia del pezzo.\n\n"
 
-        f"STRUTTURA OBBLIGATORIA — {frasi} + 1 riga dimensioni:\n\n"
+        "IGNORA COMPLETAMENTE e NON menzionare MAI:\n"
+        "- Qualsiasi numero, quota, dimensione, misura (mm, Ø, M, CH, angoli)\n"
+        "- Qualsiasi testo scritto sul foglio\n"
+        "- Il cartiglio (numero disegno, revisione, titolo, materiale, data, progettista)\n"
+        "- Tolleranze, rugosità, saldature, note, tabelle, intestazioni\n"
+        "- Nomi commerciali o codici prodotto\n\n"
+
+        f"STRUTTURA OBBLIGATORIA — {frasi}:\n\n"
 
         "1. PROFILO ESTERNO (prima frase, obbligatoria):\n"
-        "   - Facce piatte → scrivi SEMPRE 'profilo esagonale esterno' / "
-        "'profilo quadrato esterno' / 'sezione prismatica'.\n"
-        "   - Sezione tonda → 'profilo cilindrico circolare esterno'.\n"
-        "   - Aggiungi gradini/spalle se presenti. Indica conicità se visibile.\n\n"
+        "   - Facce piatte → 'profilo esagonale/quadrato/prismatico esterno'\n"
+        "   - Sezione tonda → 'profilo cilindrico circolare esterno'\n"
+        "   - Gradini, spalle, conicità se presenti\n\n"
 
         "2. CAVITÀ INTERNA (seconda frase, se presente):\n"
-        "   - Foro passante o cieco; più diametri → "
-        "'foro assiale con N diametri distinti e spalla interna'.\n"
-        "   - Filettature → specifica sempre posizione e tipo: "
-        "'filettature interne metriche' / 'filettature interne gas (G)' / "
-        "'filettatura esterna metrica' / 'filettatura trapezoidale'.\n\n"
+        "   - Foro passante o cieco, più diametri, spalle interne\n"
+        "   - Filettature → solo tipo generico: 'filettatura interna metrica' / 'gas'\n\n"
 
         "3. FEATURES SECONDARIE (terza frase):\n"
-        "   - Gole, scanalature, cave di Seeger, smussi, raccordi, simmetrie rilevanti.\n\n"
+        "   - Gole, scanalature, cave di Seeger, smussi, raccordi, simmetrie rilevanti\n\n"
 
-        "4. PROPORZIONI (quarta frase, se utile):\n"
-        "   - es. 'lunghezza totale circa doppia rispetto al diametro esterno maggiore'.\n\n"
+        "4. PROPORZIONI RELATIVE (quarta frase, se utile):\n"
+        "   - es. 'lunghezza circa doppia rispetto al diametro esterno'\n\n"
 
-        "5. DIMS (ultima riga, prefissata con '---DIMS---'):\n"
-        "   - Solo quote con linee di quota visibili: diametri Ø, lunghezze, angoli, "
-        "chiave CH, filettature con passo (es. M27×2, G 1¼-11).\n"
-        "   - Solo valori nominali; NO tolleranze (H8, h7), NO scostamenti (±), NO rugosità.\n"
-        "   - Max 8 valori separati da virgola. Ometti la riga se non ci sono quote leggibili.\n\n"
-
-        "REGOLE GENERALI:\n"
-        "- Usa lessico canonico: scanalatura/gola, gradino/spalla, "
-        "smusso/chamfer, raccordo/fillet, cavo/foro assiale.\n"
-        "- Non usare nomi commerciali dal cartiglio.\n"
-        "- Ignora cartiglio, note, tabelle, rugosità, saldatura.\n"
-        "- Non inferire dettagli non osservabili.\n"
-        "- Rispondi SOLO con testo strutturato, senza markdown."
+        "REGOLE:\n"
+        "- Usa lessico canonico con sinonimi: scanalatura/gola, gradino/spalla, "
+        "smusso/chamfer, raccordo/fillet, cavo/foro assiale\n"
+        "- NON scrivere MAI numeri di nessun tipo\n"
+        "- NON inferire dettagli non osservabili\n"
+        "- Rispondi SOLO con testo descrittivo, senza markdown"
     )
 
 
 def _mechanical_drawing_user_prompt(mode: str) -> str:
     return (
-        "Osserva il disegno tecnico e produci la descrizione strutturata.\n\n"
-        "Se ci sono più viste (frontale, laterale, sezione), usale tutte.\n\n"
-        "Segui la struttura: profilo esterno → cavità interna → "
-        "features secondarie → proporzioni → ---DIMS--- valori.\n\n"
-        "Massimo 4 frasi descrittive + 1 riga ---DIMS---."
+        "Descrivi SOLO la geometria del pezzo. "
+        "Non leggere nessuna scritta, nessun numero, nessun cartiglio. "
+        "Usa più viste se presenti. Max 4 frasi."
     )
 
 
