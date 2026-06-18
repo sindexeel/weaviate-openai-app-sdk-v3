@@ -157,7 +157,7 @@ def _get_default_collection() -> str:
     Restituisce il nome della collection di default.
     Se WEAVIATE_DEFAULT_COLLECTION è impostata, usa quella; altrimenti 'Sinde3'.
     """
-    return os.environ.get("WEAVIATE_DEFAULT_COLLECTION", "Sinde4")
+    return os.environ.get("WEAVIATE_DEFAULT_COLLECTION", "Sinde2")
 
 
 def _get_default_alpha() -> float:
@@ -1313,10 +1313,10 @@ def hybrid_search(
                 "query": final_query,
                 "alpha": alpha,
                 "limit": limit,
-                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+                "return_properties": ["source_pdf", "page_index", "mediaType", "image_b64"],
                 "return_metadata": MetadataQuery(score=True, distance=True),
             }
-            hybrid_params["query_properties"] = ["caption", "name"]
+            hybrid_params["query_properties"] = ["caption"]
 
             print(f"[DEBUG] hybrid_params: query={repr(hybrid_params['query'][:80])}, alpha={hybrid_params['alpha']}, limit={hybrid_params['limit']}")
 
@@ -1356,7 +1356,7 @@ def hybrid_search(
                 "query": query,
                 "alpha": alpha,
                 "limit": limit,
-                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+                "return_properties": ["source_pdf", "page_index", "mediaType", "image_b64"],
                 "return_metadata": MetadataQuery(score=True, distance=True),
             }
             if query_properties:
