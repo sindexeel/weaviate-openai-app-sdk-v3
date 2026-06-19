@@ -1572,38 +1572,30 @@ def _vertex_embed(
     raise RuntimeError("No embedding returned from Vertex AI")
 
 
-def _describe_mechanical_part_for_query(image_b64: str) -> str:
-    """Descrizione SOLO geometrica del pezzo — zero numeri/testo/cartiglio."""
+def describe_mechanical_part(image_b64: str) -> str:
+    """
+    Usa GPT per descrivere la GEOMETRIA del pezzo meccanico,
+    ignorando testo, quote, tabelle, bordi del foglio ecc.
+    """
     if _OPENAI_CLIENT is None:
         return ""
     try:
         resp = _OPENAI_CLIENT.chat.completions.create(
             model="gpt-4.1-mini",
             temperature=0,
-            max_tokens=400,
+            max_tokens=350,
             messages=[
                 {
                     "role": "system",
                     "content": (
                         "Sei un esperto di disegno meccanico e information retrieval. "
-                        "Riceverai immagini di tavole tecniche con pezzi meccanici.\n\n"
-                        "DEVI descrivere ESCLUSIVAMENTE la geometria e la topologia del pezzo.\n\n"
-                        "IGNORA COMPLETAMENTE e NON menzionare MAI:\n"
-                        "- Qualsiasi numero, quota, dimensione, misura (mm, Ø, M, CH, angoli)\n"
-                        "- Qualsiasi testo scritto sul foglio\n"
-                        "- Il cartiglio (numero disegno, revisione, titolo, materiale, data, progettista)\n"
-                        "- Tolleranze, rugosità, saldature, note, tabelle, intestazioni\n"
-                        "- Nomi commerciali o codici prodotto\n\n"
-                        "STRUTTURA (max 3-4 frasi):\n"
-                        "1. PROFILO ESTERNO: cilindrico/prismatico/esagonale, gradini, spalle, conicità\n"
-                        "2. CAVITÀ INTERNA: foro passante/cieco, filettatura generica (metrica/gas)\n"
-                        "3. FEATURES: gole, scanalature, smussi, raccordi, simmetrie\n"
-                        "4. PROPORZIONI RELATIVE: rapporti geometrici senza numeri\n\n"
-                        "REGOLE:\n"
-                        "- Usa lessico canonico: scanalatura/gola, gradino/spalla, "
-                        "smusso/chamfer, raccordo/fillet\n"
-                        "- NON scrivere MAI numeri di nessun tipo\n"
-                        "- Rispondi SOLO con testo descrittivo, senza markdown"
+                        "Riceverai immagini di tavole tecniche con pezzi meccanici. "
+                        "Devi produrre una descrizione geometrica ottimizzata per ricerca ibrida "
+                        "(BM25 + vettoriale). "
+                        "Considera SOLO la geometria del pezzo. "
+                        "Non inferire, non ipotizzare, non aggiungere dettagli non osservabili. "
+                        "Ignora completamente testo, numeri, quote, simboli di quotatura, tolleranze, "
+                        "cartiglio, intestazioni, note, riferimenti e qualsiasi annotazione non geometrica."
                     ),
                 },
                 {
@@ -1611,9 +1603,17 @@ def _describe_mechanical_part_for_query(image_b64: str) -> str:
                     "content": [
                         {
                             "type": "text",
-                            "text": "Descrivi SOLO la geometria del pezzo. "
-                                    "Non leggere nessuna scritta, nessun numero, nessun cartiglio. "
-                                    "Max 4 frasi.",
+                            "text": (
+                                "Osserva l'immagine e ricostruisci la geometria del pezzo. "
+                                "Se ci sono più viste (frontale/laterale/sezione), usale per ricostruire la geometria completa.\n\n"
+                                "Descrivi in linguaggio naturale e tecnico la geometria del pezzo.\n\n"
+                                "Linee guida:\n"
+                                "- privilegia invarianti geometriche: corpo cilindrico/cavo, foro passante, gradini, spalle, conicità, simmetrie, scanalature, raggi di raccordo, smussi.\n"
+                                "- usa lessico canonico meccanico e sinonimi (es. scanalatura anulare/circolare, gradino/spalla, smusso/chamfer).\n"
+                                "- non includere quote numeriche salvo angoli chiaramente leggibili (es. 30°, 15°).\n"
+                                "- escludi sempre testo, numeri, quote, cartiglio e qualsiasi elemento non geometrico visibile nella tavola.\n"
+                                "- rispondi in al massimo 4 frasi, per un totale massimo di 900 caratteri."
+                            ),
                         },
                         {
                             "type": "image_url",
@@ -1624,9 +1624,11 @@ def _describe_mechanical_part_for_query(image_b64: str) -> str:
             ],
         )
         caption = (resp.choices[0].message.content or "").strip()
-        return caption[:900] if len(caption) > 900 else caption
+        if len(caption) > 1024:
+            caption = caption[:1024]
+        return caption
     except Exception as e:
-        print(f"[query-caption] errore describe_mechanical_part: {e}")
+        print(f"⚠️ Errore nella generazione caption: {e}")
         return ""
 
 
@@ -1868,109 +1870,20 @@ def _parse_mechanical_drawing_response(raw: str) -> MechanicalDrawingCaption:
     )
 
 
-def _mechanical_drawing_system_prompt(mode: str) -> str:
-    frasi = "3-4 frasi descrittive" if mode == "query" else "4 frasi descrittive"
-    return (
-        "Sei un esperto di disegno meccanico e information retrieval. "
-        "Riceverai immagini di tavole tecniche con pezzi meccanici.\n\n"
-        "DEVI descrivere ESCLUSIVAMENTE la geometria e la topologia del pezzo.\n\n"
-
-        "IGNORA COMPLETAMENTE e NON menzionare MAI:\n"
-        "- Qualsiasi numero, quota, dimensione, misura (mm, Ø, M, CH, angoli)\n"
-        "- Qualsiasi testo scritto sul foglio\n"
-        "- Il cartiglio (numero disegno, revisione, titolo, materiale, data, progettista)\n"
-        "- Tolleranze, rugosità, saldature, note, tabelle, intestazioni\n"
-        "- Nomi commerciali o codici prodotto\n\n"
-
-        f"STRUTTURA OBBLIGATORIA — {frasi}:\n\n"
-
-        "1. PROFILO ESTERNO (prima frase, obbligatoria):\n"
-        "   - Facce piatte → 'profilo esagonale/quadrato/prismatico esterno'\n"
-        "   - Sezione tonda → 'profilo cilindrico circolare esterno'\n"
-        "   - Gradini, spalle, conicità se presenti\n\n"
-
-        "2. CAVITÀ INTERNA (seconda frase, se presente):\n"
-        "   - Foro passante o cieco, più diametri, spalle interne\n"
-        "   - Filettature → solo tipo generico: 'filettatura interna metrica' / 'gas'\n\n"
-
-        "3. FEATURES SECONDARIE (terza frase):\n"
-        "   - Gole, scanalature, cave di Seeger, smussi, raccordi, simmetrie rilevanti\n\n"
-
-        "4. PROPORZIONI RELATIVE (quarta frase, se utile):\n"
-        "   - es. 'lunghezza circa doppia rispetto al diametro esterno'\n\n"
-
-        "REGOLE:\n"
-        "- Usa lessico canonico con sinonimi: scanalatura/gola, gradino/spalla, "
-        "smusso/chamfer, raccordo/fillet, cavo/foro assiale\n"
-        "- NON scrivere MAI numeri di nessun tipo\n"
-        "- NON inferire dettagli non osservabili\n"
-        "- Rispondi SOLO con testo descrittivo, senza markdown"
-    )
-
-
-def _mechanical_drawing_user_prompt(mode: str) -> str:
-    return (
-        "Descrivi SOLO la geometria del pezzo. "
-        "Non leggere nessuna scritta, nessun numero, nessun cartiglio. "
-        "Usa più viste se presenti. Max 4 frasi."
-    )
-
-
 def describe_mechanical_drawing(
     image_b64: str, mode: str = "query"
 ) -> Optional[MechanicalDrawingCaption]:
-    """
-    Usa GPT per generare una descrizione strutturata del pezzo meccanico.
-    mode='query': caption concisa per ricerca; mode='index': leggermente più completa.
-    """
-    if _OPENAI_CLIENT is None:
+    """Wrapper retrocompatibile — delega a describe_mechanical_part."""
+    caption = describe_mechanical_part(image_b64)
+    if not caption:
         return None
-
-    if mode not in ("query", "index"):
-        mode = "query"
-
-    try:
-        resp = _OPENAI_CLIENT.chat.completions.create(
-            model="gpt-4.1-mini",
-            temperature=0,
-            max_tokens=500,
-            messages=[
-                {
-                    "role": "system",
-                    "content": _mechanical_drawing_system_prompt(mode),
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": _mechanical_drawing_user_prompt(mode),
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{image_b64}"
-                            },
-                        },
-                    ],
-                },
-            ],
-        )
-
-        raw = (resp.choices[0].message.content or "").strip()
-        return _parse_mechanical_drawing_response(raw)
-
-    except Exception as e:
-        print(f"[query-caption] errore nella descrizione immagine ({mode}): {e}")
-        return None
+    return MechanicalDrawingCaption(shape_caption=caption, dim_caption="", combined=caption)
 
 
 def describe_image_for_query(image_b64: str) -> Optional[str]:
-    """Wrapper retrocompatibile: restituisce combined da describe_mechanical_drawing."""
-    result = describe_mechanical_drawing(image_b64, mode="query")
-    if result is None:
-        return None
-    return result.combined or None
+    """Wrapper retrocompatibile: usa describe_mechanical_part."""
+    caption = describe_mechanical_part(image_b64)
+    return caption or None
 
 
 @mcp.tool()
@@ -2012,9 +1925,7 @@ def insert_image_vertex(
         return {"error": "Either image_id or image_url must be provided"}
 
     if caption is None:
-        generated = describe_mechanical_drawing(image_b64, mode="index")
-        if generated and generated.combined.strip():
-            caption = generated.combined.strip()
+        caption = describe_mechanical_part(image_b64) or None
 
     vec = _vertex_embed(image_b64=image_b64, text=caption)
     client = _connect()
