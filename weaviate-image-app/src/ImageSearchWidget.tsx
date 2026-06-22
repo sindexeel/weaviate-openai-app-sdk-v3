@@ -133,14 +133,14 @@ export const ImageSearchWidget: React.FC = () => {
         throw new Error("Risposta /upload-image senza image_id");
       }
 
-      setStatus(`Progetto caricato. Avvio la ricerca tra i progetti Sinde3...`);
+      setStatus(`Progetto caricato. Avvio la ricerca tra i progetti Sinde...`);
 
       // 2️⃣ Chiama il backend HTTP /image-search (non più MCP)
       const searchResp = await fetch(`${MCP_BASE_URL}/image-search`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          collection: "Sinde3",
+          collection: "Sinde2",
           image_id: imageId,
           limit: 20,
         }),
@@ -234,9 +234,9 @@ export const ImageSearchWidget: React.FC = () => {
     <div className="widget-root">
       {/* Header */}
       <div className="widget-header">
-        <h1 className="widget-title">Ricerca progetti Sinde3</h1>
+        <h1 className="widget-title">Ricerca progetti Sinde</h1>
         <p className="widget-subtitle">
-          Carica un'immagine o un PDF per trovare progetti simili nella collezione Sinde3
+          Carica un'immagine o un PDF per trovare progetti simili nella collezione Sinde
         </p>
         {DEBUG_MODE && (
           <button

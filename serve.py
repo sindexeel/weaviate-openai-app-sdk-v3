@@ -157,21 +157,21 @@ def _get_default_collection() -> str:
     Restituisce il nome della collection di default.
     Se WEAVIATE_DEFAULT_COLLECTION è impostata, usa quella; altrimenti 'Sinde3'.
     """
-    return os.environ.get("WEAVIATE_DEFAULT_COLLECTION", "Sinde3")
+    return os.environ.get("WEAVIATE_DEFAULT_COLLECTION", "Sinde2")
 
 
 def _get_default_alpha() -> float:
     """
     Restituisce l'alpha di default per hybrid_search.
-    Se HYBRID_DEFAULT_ALPHA è impostata (env), usa quella; altrimenti 0.2.
+    Se HYBRID_DEFAULT_ALPHA è impostata (env), usa quella; altrimenti 0.7.
     """
     val = os.environ.get("HYBRID_DEFAULT_ALPHA")
     if not val:
-        return 0.2
+        return 0.7
     try:
         return float(val)
     except (TypeError, ValueError):
-        return 0.2
+        return 0.7
 
 
 def _resolve_service_account_path() -> Optional[str]:
@@ -1297,56 +1297,28 @@ def hybrid_search(
         # Aggiorna i metadata gRPC prima della query per assicurarci che siano aggiornati
         _update_client_grpc_metadata(client)
 
-        drawing_caption: Optional[MechanicalDrawingCaption] = None
         if image_b64:
-            # 1️⃣ descrizione shape-invariant ad hoc per la query (BM25 su caption+name)
-            drawing_caption = describe_mechanical_drawing(image_b64, mode="query")
-            shape_query = ""
-            if drawing_caption:
-                shape_query = _normalize_caption_for_search(
-                    drawing_caption.shape_caption
-                ).strip()
-                print(f"[DEBUG] shape_caption FULL: {repr(drawing_caption.shape_caption)}")
-                print(f"[DEBUG] dim_caption FULL: {repr(drawing_caption.dim_caption)}")
-                print(f"[DEBUG] normalized shape_query: {repr(shape_query)}")
-                if shape_query:
-                    print(
-                        f"[hybrid_search] shape_query (len={len(shape_query)}): "
-                        f"{shape_query[:120]}..."
-                    )
-                else:
-                    print("[hybrid_search] shape_caption vuota dopo normalizzazione")
-            else:
-                print("[hybrid_search] nessuna descrizione GPT generata, uso fallback")
+            # Stesso prompt usato per l'indicizzazione Sinde4 (PROFILO/CAVITÀ/FEATURES/DIMS)
+            query_caption = describe_image_for_query(image_b64) or ""
 
-            # Evita query vuota: il vectorizer remoto di Weaviate risponde 400
-            # ("No embedding input is provided") quando non riceve testo.
-            fallback_query = (
-                query
-                or (
-                    drawing_caption.combined.strip()
-                    if drawing_caption and drawing_caption.combined.strip()
-                    else None
-                )
+            print(f"[DEBUG] query_caption (len={len(query_caption)}): {query_caption[:120]}...")
+
+            final_query = (
+                query_caption
+                or query
                 or "technical mechanical drawing component geometry"
             )
-            final_query = shape_query or fallback_query
 
-            # 2️⃣ query testuale shape-invariant (normalizzata); fallback su combined/query utente
-            #    Weaviate genererà automaticamente il vettore dalla query se ha un vectorizer configurato
             hybrid_params: Dict[str, Any] = {
                 "query": final_query,
                 "alpha": alpha,
                 "limit": limit,
-                # NON passiamo più "vector": il vettore verrà generato automaticamente da Weaviate dalla query
                 "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64"],
                 "return_metadata": MetadataQuery(score=True, distance=True),
             }
-            # Quando c'è un'immagine, limita BM25 a caption e name come nel Colab
             hybrid_params["query_properties"] = ["caption", "name"]
-            
-            # DEBUG: log dei parametri prima della chiamata
-            print(f"[DEBUG] hybrid_params: query={repr(hybrid_params['query'])}, alpha={hybrid_params['alpha']}, limit={hybrid_params['limit']}, query_properties={hybrid_params['query_properties']}")
+
+            print(f"[DEBUG] hybrid_params: query={repr(hybrid_params['query'][:80])}, alpha={hybrid_params['alpha']}, limit={hybrid_params['limit']}")
 
             try:
                 resp = coll.query.hybrid(**hybrid_params)
@@ -1373,6 +1345,7 @@ def hybrid_search(
                             "page_index",
                             "mediaType",
                             "image_b64",
+                            "dim_values",
                         ],
                         return_metadata=MetadataQuery(score=True),
                     )
@@ -1414,14 +1387,7 @@ def hybrid_search(
                     "distance": distance,
                 }
             )
-        # Re-ranking proporzionale: penalizza pezzi con rapporti dimensionali diversi
-        query_dim_caption = (
-            drawing_caption.dim_caption
-            if image_b64 and drawing_caption
-            else ""
-        )
-        filtered = _rerank_by_proportional_dims(out, query_dim_caption)
-        return {"count": len(filtered), "results": filtered}
+        return {"count": len(out), "results": out}
     finally:
         client.close()
 
@@ -1606,6 +1572,129 @@ def _vertex_embed(
     raise RuntimeError("No embedding returned from Vertex AI")
 
 
+def describe_mechanical_part(image_b64: str) -> str:
+    """
+    Usa GPT per descrivere la GEOMETRIA del pezzo meccanico,
+    ignorando testo, quote, tabelle, bordi del foglio ecc.
+    """
+    if _OPENAI_CLIENT is None:
+        return ""
+    try:
+        resp = _OPENAI_CLIENT.chat.completions.create(
+            model="gpt-4.1-mini",
+            temperature=0,
+            max_tokens=350,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Sei un esperto di disegno meccanico e information retrieval. "
+                        "Riceverai immagini di tavole tecniche con pezzi meccanici. "
+                        "Devi produrre una descrizione geometrica ottimizzata per ricerca ibrida "
+                        "(BM25 + vettoriale). "
+                        "Considera SOLO la geometria del pezzo. "
+                        "Non inferire, non ipotizzare, non aggiungere dettagli non osservabili. "
+                        "Ignora completamente testo, numeri, quote, simboli di quotatura, tolleranze, "
+                        "cartiglio, intestazioni, note, riferimenti e qualsiasi annotazione non geometrica."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                "Osserva l'immagine e ricostruisci la geometria del pezzo. "
+                                "Se ci sono più viste (frontale/laterale/sezione), usale per ricostruire la geometria completa.\n\n"
+                                "Descrivi in linguaggio naturale e tecnico la geometria del pezzo.\n\n"
+                                "Linee guida:\n"
+                                "- privilegia invarianti geometriche: corpo cilindrico/cavo, foro passante, gradini, spalle, conicità, simmetrie, scanalature, raggi di raccordo, smussi.\n"
+                                "- usa lessico canonico meccanico e sinonimi (es. scanalatura anulare/circolare, gradino/spalla, smusso/chamfer).\n"
+                                "- non includere quote numeriche salvo angoli chiaramente leggibili (es. 30°, 15°).\n"
+                                "- escludi sempre testo, numeri, quote, cartiglio e qualsiasi elemento non geometrico visibile nella tavola.\n"
+                                "- rispondi in al massimo 4 frasi, per un totale massimo di 900 caratteri."
+                            ),
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/png;base64,{image_b64}"},
+                        },
+                    ],
+                },
+            ],
+        )
+        caption = (resp.choices[0].message.content or "").strip()
+        if len(caption) > 1024:
+            caption = caption[:1024]
+        return caption
+    except Exception as e:
+        print(f"⚠️ Errore nella generazione caption: {e}")
+        return ""
+
+
+def _extract_dim_values_for_query(image_b64: str) -> str:
+    """
+    Estrae le dimensioni principali e le normalizza rispetto al massimo.
+    [100, 50, 20] → '1.0, 0.5, 0.2'  (scale-invariant, compatibile con dim_values in Sinde4)
+    """
+    if _OPENAI_CLIENT is None:
+        return ""
+    try:
+        resp = _OPENAI_CLIENT.chat.completions.create(
+            model="gpt-4.1-mini",
+            temperature=0,
+            max_tokens=60,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Sei un esperto di disegno meccanico. "
+                        "Identifica le dimensioni che definiscono la forma geometrica principale del pezzo. "
+                        "Ignora tolleranze, filettature, smussi, raggi e quote secondarie. "
+                        "Restituisci SOLO i valori numerici in ordine decrescente, separati da virgola, "
+                        "senza unita di misura. Massimo 6 valori. "
+                        "Se non vedi quote leggibili, restituisci stringa vuota."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Dimensioni principali della forma geometrica, ordine decrescente, solo numeri separati da virgola.",
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/png;base64,{image_b64}"},
+                        },
+                    ],
+                },
+            ],
+        )
+        raw = (resp.choices[0].message.content or "").strip()
+        if not raw:
+            return ""
+        nums = [float(x.replace(",", ".")) for x in re.findall(r"[\d]+(?:[.,]\d+)?", raw)]
+        nums = sorted([v for v in nums if v > 0], reverse=True)[:6]
+        if not nums:
+            return ""
+        mx = nums[0]
+        return ", ".join(str(round(v / mx, 4)) for v in nums)
+    except Exception as e:
+        print(f"[query-caption] errore extract_dim_values: {e}")
+        return ""
+
+
+def _parse_normalized_dims(dim_values_str: str) -> List[float]:
+    """Parsa '1.0, 0.5, 0.2' → [1.0, 0.5, 0.2]. Valori già normalizzati."""
+    if not dim_values_str:
+        return []
+    try:
+        return [float(x.strip()) for x in dim_values_str.split(",") if x.strip()]
+    except Exception:
+        return []
+
+
 _DIMS_DELIMITER = "---DIMS---"
 _MAX_SHAPE_CAPTION_CHARS = 1000
 _MAX_DIM_CAPTION_CHARS = 400
@@ -1665,30 +1754,23 @@ def _proportional_dim_similarity(query_dims: List[float], result_dims: List[floa
 
 
 def _rerank_by_proportional_dims(
-    results: List[Dict], query_dim_caption: str, weight: float = 0.35
+    results: List[Dict], query_dim_values: str, weight: float = 0.35
 ) -> List[Dict]:
     """
     Re-ordina i risultati ibridi combinando lo score Weaviate con la similarità
     proporzionale delle dimensioni. weight=0 disabilita il re-ranking.
-    Il combined_score è: (1-weight)*bm25_score + weight*dim_similarity*bm25_score
-                       = bm25_score * (1 - weight + weight*dim_sim)
-    Così un dim_sim=1.0 lascia invariato; dim_sim=0.0 riduce lo score di `weight`.
+    query_dim_values: stringa normalizzata '1.0, 0.5, 0.2' (dal campo dim_values di Sinde4).
     """
-    if weight <= 0 or not query_dim_caption:
+    if weight <= 0 or not query_dim_values:
         return results
 
-    query_dims = _extract_numeric_dims(query_dim_caption)
+    query_dims = _parse_normalized_dims(query_dim_values)
     if not query_dims:
         return results
 
     for item in results:
-        caption = (item.get("properties") or {}).get("caption", "") or ""
-        # Estrae la sezione dims dal caption salvato (dopo ---DIMS---)
-        if _DIMS_DELIMITER in caption:
-            dim_part = caption.split(_DIMS_DELIMITER, 1)[1]
-        else:
-            dim_part = caption
-        result_dims = _extract_numeric_dims(dim_part)
+        dim_values_str = (item.get("properties") or {}).get("dim_values", "") or ""
+        result_dims = _parse_normalized_dims(dim_values_str)
         dim_sim = _proportional_dim_similarity(query_dims, result_dims)
         base = item.get("bm25_score") or 0.0
         item["dim_similarity"] = round(dim_sim, 4)
@@ -1788,116 +1870,20 @@ def _parse_mechanical_drawing_response(raw: str) -> MechanicalDrawingCaption:
     )
 
 
-def _mechanical_drawing_system_prompt(mode: str) -> str:
-    frasi = "3-4 frasi descrittive" if mode == "query" else "4 frasi descrittive"
-    return (
-        "Sei un esperto di disegno meccanico e information retrieval. "
-        "Riceverai immagini di tavole tecniche con pezzi meccanici. "
-        "Devi produrre una descrizione geometrica ottimizzata per ricerca ibrida "
-        "(BM25 + vettoriale), seguita da una riga con le dimensioni principali.\n\n"
-
-        f"STRUTTURA OBBLIGATORIA — {frasi} + 1 riga dimensioni:\n\n"
-
-        "1. PROFILO ESTERNO (prima frase, obbligatoria):\n"
-        "   - Facce piatte → scrivi SEMPRE 'profilo esagonale esterno' / "
-        "'profilo quadrato esterno' / 'sezione prismatica'.\n"
-        "   - Sezione tonda → 'profilo cilindrico circolare esterno'.\n"
-        "   - Aggiungi gradini/spalle se presenti. Indica conicità se visibile.\n\n"
-
-        "2. CAVITÀ INTERNA (seconda frase, se presente):\n"
-        "   - Foro passante o cieco; più diametri → "
-        "'foro assiale con N diametri distinti e spalla interna'.\n"
-        "   - Filettature → specifica sempre posizione e tipo: "
-        "'filettature interne metriche' / 'filettature interne gas (G)' / "
-        "'filettatura esterna metrica' / 'filettatura trapezoidale'.\n\n"
-
-        "3. FEATURES SECONDARIE (terza frase):\n"
-        "   - Gole, scanalature, cave di Seeger, smussi, raccordi, simmetrie rilevanti.\n\n"
-
-        "4. PROPORZIONI (quarta frase, se utile):\n"
-        "   - es. 'lunghezza totale circa doppia rispetto al diametro esterno maggiore'.\n\n"
-
-        "5. DIMS (ultima riga, prefissata con '---DIMS---'):\n"
-        "   - Solo quote con linee di quota visibili: diametri Ø, lunghezze, angoli, "
-        "chiave CH, filettature con passo (es. M27×2, G 1¼-11).\n"
-        "   - Solo valori nominali; NO tolleranze (H8, h7), NO scostamenti (±), NO rugosità.\n"
-        "   - Max 8 valori separati da virgola. Ometti la riga se non ci sono quote leggibili.\n\n"
-
-        "REGOLE GENERALI:\n"
-        "- Usa lessico canonico: scanalatura/gola, gradino/spalla, "
-        "smusso/chamfer, raccordo/fillet, cavo/foro assiale.\n"
-        "- Non usare nomi commerciali dal cartiglio.\n"
-        "- Ignora cartiglio, note, tabelle, rugosità, saldatura.\n"
-        "- Non inferire dettagli non osservabili.\n"
-        "- Rispondi SOLO con testo strutturato, senza markdown."
-    )
-
-
-def _mechanical_drawing_user_prompt(mode: str) -> str:
-    return (
-        "Osserva il disegno tecnico e produci la descrizione strutturata.\n\n"
-        "Se ci sono più viste (frontale, laterale, sezione), usale tutte.\n\n"
-        "Segui la struttura: profilo esterno → cavità interna → "
-        "features secondarie → proporzioni → ---DIMS--- valori.\n\n"
-        "Massimo 4 frasi descrittive + 1 riga ---DIMS---."
-    )
-
-
 def describe_mechanical_drawing(
     image_b64: str, mode: str = "query"
 ) -> Optional[MechanicalDrawingCaption]:
-    """
-    Usa GPT per generare una descrizione strutturata del pezzo meccanico.
-    mode='query': caption concisa per ricerca; mode='index': leggermente più completa.
-    """
-    if _OPENAI_CLIENT is None:
+    """Wrapper retrocompatibile — delega a describe_mechanical_part."""
+    caption = describe_mechanical_part(image_b64)
+    if not caption:
         return None
-
-    if mode not in ("query", "index"):
-        mode = "query"
-
-    try:
-        resp = _OPENAI_CLIENT.chat.completions.create(
-            model="gpt-4.1-mini",
-            temperature=0,
-            max_tokens=500,
-            messages=[
-                {
-                    "role": "system",
-                    "content": _mechanical_drawing_system_prompt(mode),
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": _mechanical_drawing_user_prompt(mode),
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{image_b64}"
-                            },
-                        },
-                    ],
-                },
-            ],
-        )
-
-        raw = (resp.choices[0].message.content or "").strip()
-        return _parse_mechanical_drawing_response(raw)
-
-    except Exception as e:
-        print(f"[query-caption] errore nella descrizione immagine ({mode}): {e}")
-        return None
+    return MechanicalDrawingCaption(shape_caption=caption, dim_caption="", combined=caption)
 
 
 def describe_image_for_query(image_b64: str) -> Optional[str]:
-    """Wrapper retrocompatibile: restituisce combined da describe_mechanical_drawing."""
-    result = describe_mechanical_drawing(image_b64, mode="query")
-    if result is None:
-        return None
-    return result.combined or None
+    """Wrapper retrocompatibile: usa describe_mechanical_part."""
+    caption = describe_mechanical_part(image_b64)
+    return caption or None
 
 
 @mcp.tool()
@@ -1939,9 +1925,7 @@ def insert_image_vertex(
         return {"error": "Either image_id or image_url must be provided"}
 
     if caption is None:
-        generated = describe_mechanical_drawing(image_b64, mode="index")
-        if generated and generated.combined.strip():
-            caption = generated.combined.strip()
+        caption = describe_mechanical_part(image_b64) or None
 
     vec = _vertex_embed(image_b64=image_b64, text=caption)
     client = _connect()
@@ -2280,7 +2264,7 @@ async def _list_tools() -> List[types.Tool]:
                 "properties": {
                     "collection": {
                         "type": "string",
-                        "description": "Nome della collection (sempre 'Sinde3' per questo assistente)",
+                        "description": "Nome della collection (sempre 'Sinde4' per questo assistente)",
                     },
                     "query": {
                         "type": "string",
@@ -2321,8 +2305,8 @@ async def _list_tools() -> List[types.Tool]:
             tool_title = "Ricerca ibrida (BM25 + vettoriale)"
             tool_description = (
                 "Esegue una ricerca ibrida combinando ricerca keyword (BM25) e ricerca vettoriale. "
-                "Tool principale per cercare nella collection Sinde3.\n\n"
-                "ISTRUZIONI: Usa SEMPRE collection='Sinde3'. Usa query_properties=['caption','name'] e "
+                "Tool principale per cercare nella collection Sinde4.\n\n"
+                "ISTRUZIONI: Usa SEMPRE collection='Sinde4'. Usa query_properties=['caption','name'] e "
                 "return_properties=['name','source_pdf','page_index','mediaType']. Mantieni alpha=0.2 e limit=20 "
                 "salvo richieste diverse. Per ricerche per immagini, usa image_id (da /upload-image) o image_url."
             )
