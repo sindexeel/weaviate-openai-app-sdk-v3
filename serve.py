@@ -1323,10 +1323,10 @@ def hybrid_search(
                 "query": final_query,
                 "alpha": alpha,
                 "limit": limit,
-                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+                "return_properties": ["source_pdf", "caption", "image_b64"],
                 "return_metadata": MetadataQuery(score=True, distance=True),
             }
-            hybrid_params["query_properties"] = ["caption", "name"]
+            hybrid_params["query_properties"] = ["caption"]
 
             print(f"[DEBUG] hybrid_params: query={repr(hybrid_params['query'][:80])}, alpha={hybrid_params['alpha']}, limit={hybrid_params['limit']}")
 
@@ -1347,15 +1347,12 @@ def hybrid_search(
                     )
                     resp = coll.query.bm25(
                         query=bm25_query,
-                        query_properties=["caption", "name"],
+                        query_properties=["caption"],
                         limit=limit,
                         return_properties=[
-                            "name",
                             "source_pdf",
-                            "page_index",
-                            "mediaType",
+                            "caption",
                             "image_b64",
-                            "dim_values",
                         ],
                         return_metadata=MetadataQuery(score=True),
                     )
@@ -1366,7 +1363,7 @@ def hybrid_search(
                 "query": query,
                 "alpha": alpha,
                 "limit": limit,
-                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+                "return_properties": ["source_pdf", "caption", "image_b64"],
                 "return_metadata": MetadataQuery(score=True, distance=True),
             }
             if query_properties:
@@ -2036,7 +2033,7 @@ def _do_fusion_search(client, image_b64, limit=20):
                 alpha=0.2,
                 query_properties=["caption"],
                 limit=pool,
-                return_properties=["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+                return_properties=["source_pdf", "caption", "image_b64"],
                 return_metadata=MetadataQuery(score=True),
             )
         except Exception as exc:
@@ -2045,7 +2042,7 @@ def _do_fusion_search(client, image_b64, limit=20):
                 query=caption,
                 query_properties=["caption"],
                 limit=pool,
-                return_properties=["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+                return_properties=["source_pdf", "caption", "image_b64"],
                 return_metadata=MetadataQuery(score=True),
             )
         res_cap = [
@@ -2229,7 +2226,7 @@ def image_search_vertex(
         resp = coll.query.near_image(
             image_b64,
             limit=limit,
-            return_properties=["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+            return_properties=["source_pdf", "caption", "image_b64"],
             return_metadata=MetadataQuery(distance=True),
         )
         out = []
@@ -2532,8 +2529,8 @@ async def _list_tools() -> List[types.Tool]:
             tool_description = (
                 "Esegue una ricerca ibrida combinando ricerca keyword (BM25) e ricerca vettoriale. "
                 "Tool principale per cercare nella collection Sinde4.\n\n"
-                "ISTRUZIONI: Usa SEMPRE collection='Sinde4'. Usa query_properties=['caption','name'] e "
-                "return_properties=['name','source_pdf','page_index','mediaType']. Mantieni alpha=0.2 e limit=20 "
+                "ISTRUZIONI: Usa SEMPRE collection='Sinde4'. Usa query_properties=['caption'] e "
+                "return_properties=['source_pdf','caption','image_b64']. Mantieni alpha=0.2 e limit=20 "
                 "salvo richieste diverse. Per ricerche per immagini, usa image_id (da /upload-image) o image_url."
             )
 
