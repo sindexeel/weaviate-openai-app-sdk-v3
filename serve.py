@@ -1298,7 +1298,17 @@ def hybrid_search(
         _update_client_grpc_metadata(client)
 
         if image_b64:
-            # Stesso prompt usato per l'indicizzazione Sinde4 (PROFILO/CAVITÀ/FEATURES/DIMS)
+            # Fusion search: DINOv2 + Caption (se abilitato)
+            if _FUSION_ENABLED:
+                try:
+                    result = _do_fusion_search(client, image_b64, limit)
+                    return result
+                except Exception as exc:
+                    print(f"[fusion] failed, falling back to caption-only: {exc}")
+                    import traceback
+                    traceback.print_exc()
+
+            # Fallback: caption-only hybrid search
             query_caption = describe_image_for_query(image_b64) or ""
 
             print(f"[DEBUG] query_caption (len={len(query_caption)}): {query_caption[:120]}...")
@@ -1884,6 +1894,222 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
     """Wrapper retrocompatibile: usa describe_mechanical_part."""
     caption = describe_mechanical_part(image_b64)
     return caption or None
+
+
+# =====================================================
+# DINOv2 + Fusion Search (DINOv2 image + Caption hybrid)
+# =====================================================
+
+_DINO_COLLECTION_NAME = os.environ.get("DINO_COLLECTION", "SindeDino")
+_FUSION_W_DINO = float(os.environ.get("FUSION_W_DINO", "0.5"))
+_FUSION_W_CAP = float(os.environ.get("FUSION_W_CAP", "0.5"))
+_FUSION_POOL = int(os.environ.get("FUSION_POOL", "50"))
+_FUSION_ENABLED = os.environ.get("FUSION_ENABLED", "1").lower() in ("1", "true", "yes")
+
+_dino_model = None
+_dino_processor = None
+_dino_device = None
+
+
+def _ensure_dino_loaded():
+    """Lazy-load DINOv2 model on first use."""
+    global _dino_model, _dino_processor, _dino_device
+    if _dino_model is not None:
+        return True
+    try:
+        import torch
+        from transformers import AutoImageProcessor, AutoModel
+
+        _dino_device = "cuda" if torch.cuda.is_available() else "cpu"
+        model_name = "facebook/dinov2-base"
+        print(f"[dino] Loading {model_name} on {_dino_device}...")
+        _dino_processor = AutoImageProcessor.from_pretrained(model_name)
+        _dino_model = AutoModel.from_pretrained(model_name).to(_dino_device).eval()
+        print(f"[dino] Model loaded (768 dim)")
+        return True
+    except Exception as exc:
+        print(f"[dino] Failed to load DINOv2: {exc}")
+        return False
+
+
+def _preprocess_drawing(pil_image):
+    """Crop cartiglio, Otsu binarization, connected component filtering, morph close."""
+    import cv2
+    import numpy as np
+    from PIL import Image as PILImage
+
+    img = np.array(pil_image)
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY) if len(img.shape) == 3 else img.copy()
+    h, w = gray.shape
+
+    gray = gray[: int(h * 0.82), : int(w * 0.95)]
+
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
+    clean = np.zeros_like(binary)
+    for i in range(1, num_labels):
+        if stats[i, cv2.CC_STAT_AREA] >= 3000:
+            clean[labels == i] = 255
+
+    kernel = np.ones((3, 3), np.uint8)
+    clean = cv2.morphologyEx(clean, cv2.MORPH_CLOSE, kernel, iterations=1)
+
+    result_rgb = cv2.cvtColor(255 - clean, cv2.COLOR_GRAY2RGB)
+    return PILImage.fromarray(result_rgb)
+
+
+def _embed_image_dino(pil_image):
+    """Preprocess + DINOv2 CLS embedding (768-dim, L2-normalized)."""
+    import torch
+
+    _ensure_dino_loaded()
+    clean = _preprocess_drawing(pil_image)
+    inputs = _dino_processor(images=clean, return_tensors="pt").to(_dino_device)
+    with torch.no_grad():
+        outputs = _dino_model(**inputs)
+    cls = outputs.last_hidden_state[:, 0]
+    cls = cls / cls.norm(dim=-1, keepdim=True)
+    return cls[0].cpu().tolist()
+
+
+def _fusion_normalize(results, score_key="score"):
+    """Min-max normalize scores to [0, 1]."""
+    scores = [r.get(score_key) or 0 for r in results]
+    if not scores:
+        return results
+    mn, mx = min(scores), max(scores)
+    rng = mx - mn if mx > mn else 1.0
+    return [{**r, "norm_score": ((r.get(score_key) or 0) - mn) / rng} for r in results]
+
+
+def _do_fusion_search(client, image_b64, limit=20):
+    """
+    Fusion DINOv2 + Caption: fetches top-pool from both SindeDino (near_vector)
+    and Sinde4 (hybrid caption), normalizes scores, combines with weighted sum.
+    Returns dict compatible with hybrid_search output format.
+    """
+    from PIL import Image as PILImage
+    from io import BytesIO
+
+    pool = _FUSION_POOL
+    w_dino = _FUSION_W_DINO
+    w_cap = _FUSION_W_CAP
+
+    # 1. DINOv2 embedding
+    img_bytes = base64.b64decode(image_b64)
+    pil_img = PILImage.open(BytesIO(img_bytes)).convert("RGB")
+    query_embedding = _embed_image_dino(pil_img)
+
+    # 2. Caption via GPT
+    caption = describe_mechanical_part(image_b64) or ""
+    if caption:
+        print(f"[fusion] caption: {caption[:100]}...")
+
+    # 3. DINOv2 near_vector on SindeDino
+    dino_coll = client.collections.get(_DINO_COLLECTION_NAME)
+    resp_dino = dino_coll.query.near_vector(
+        near_vector=query_embedding,
+        limit=pool,
+        return_properties=["source_pdf", "image_b64"],
+        return_metadata=MetadataQuery(distance=True),
+    )
+    res_dino = [
+        {
+            "source_pdf": o.properties.get("source_pdf", ""),
+            "score": 1.0 - (getattr(o.metadata, "distance", 0) or 0),
+            "image_b64": o.properties.get("image_b64"),
+        }
+        for o in getattr(resp_dino, "objects", [])
+    ]
+
+    # 4. Caption hybrid on Sinde4
+    _update_client_grpc_metadata(client)
+    cap_coll_name = _get_default_collection()
+    cap_coll = client.collections.get(cap_coll_name)
+
+    res_cap = []
+    if caption:
+        try:
+            resp_cap = cap_coll.query.hybrid(
+                query=caption,
+                alpha=0.2,
+                query_properties=["caption"],
+                limit=pool,
+                return_properties=["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+                return_metadata=MetadataQuery(score=True),
+            )
+        except Exception as exc:
+            print(f"[fusion] hybrid caption failed, BM25 fallback: {exc}")
+            resp_cap = cap_coll.query.bm25(
+                query=caption,
+                query_properties=["caption"],
+                limit=pool,
+                return_properties=["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+                return_metadata=MetadataQuery(score=True),
+            )
+        res_cap = [
+            {
+                "source_pdf": o.properties.get("source_pdf", ""),
+                "score": getattr(o.metadata, "score", None),
+                "properties": o.properties,
+            }
+            for o in getattr(resp_cap, "objects", [])
+        ]
+
+    # 5. Normalize
+    res_dino_n = _fusion_normalize(res_dino, "score")
+    res_cap_n = _fusion_normalize(res_cap, "score")
+
+    dino_map = {r["source_pdf"]: r["norm_score"] for r in res_dino_n}
+    dino_img_map = {r["source_pdf"]: r.get("image_b64") for r in res_dino}
+
+    cap_map = {r["source_pdf"]: r["norm_score"] for r in res_cap_n}
+    cap_props_map = {r["source_pdf"]: r.get("properties", {}) for r in res_cap}
+
+    # 6. Fuse
+    all_pdfs = set(dino_map.keys()) | set(cap_map.keys())
+    fused = []
+    for pdf in all_pdfs:
+        d = dino_map.get(pdf, 0.0)
+        c = cap_map.get(pdf, 0.0)
+        fused.append({
+            "source_pdf": pdf,
+            "fusion_score": w_dino * d + w_cap * c,
+            "dino_norm": d,
+            "cap_norm": c,
+        })
+
+    fused.sort(key=lambda x: x["fusion_score"], reverse=True)
+    fused = fused[:limit]
+
+    print(f"[fusion] w_dino={w_dino}, w_cap={w_cap}, pool={pool}, "
+          f"dino_hits={len(dino_map)}, cap_hits={len(cap_map)}, fused={len(fused)}")
+
+    # 7. Build output — prefer Sinde4 properties (name, mediaType, page_index)
+    out = []
+    for r in fused:
+        pdf = r["source_pdf"]
+        if pdf in cap_props_map and cap_props_map[pdf]:
+            props = dict(cap_props_map[pdf])
+        else:
+            props = {
+                "source_pdf": pdf,
+                "name": pdf.replace(".pdf", ""),
+                "image_b64": dino_img_map.get(pdf),
+            }
+        out.append({
+            "uuid": "",
+            "properties": props,
+            "bm25_score": r["fusion_score"],
+            "distance": None,
+        })
+
+    for i, r in enumerate(fused[:5]):
+        print(f"[fusion] {i + 1}. {r['source_pdf']:35s} "
+              f"f={r['fusion_score']:.4f} d={r['dino_norm']:.3f} c={r['cap_norm']:.3f}")
+
+    return {"count": len(out), "results": out}
 
 
 @mcp.tool()
