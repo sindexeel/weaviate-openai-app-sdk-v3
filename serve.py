@@ -918,7 +918,7 @@ async def image_search_http(request):
             query="",  # niente testo utente, è una pura ricerca per immagine
             limit=limit,
             # Usa il default alpha=0.2 di hybrid_search (20% vettoriale, 80% BM25)
-            query_properties=["caption", "name"],
+            query_properties=["caption", "source_pdf"],
             image_id=image_id,
             image_url=image_url,
         )
@@ -1373,7 +1373,7 @@ def hybrid_search(
         # Log dei risultati nel formato Colab
         print("[DEBUG] Risultati hybrid search:")
         for o in getattr(resp, "objects", []) or []:
-            name = getattr(o, "properties", {}).get("name", "N/A")
+            name = getattr(o, "properties", {}).get("source_pdf", "N/A")
             md = getattr(o, "metadata", None)
             score = getattr(md, "score", None)
             if score is not None:
