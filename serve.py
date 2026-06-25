@@ -1580,69 +1580,111 @@ def _vertex_embed(
 
 
 def describe_mechanical_part(image_b64: str) -> str:
-    """
-    Usa GPT per descrivere la GEOMETRIA del pezzo meccanico,
-    ignorando testo, quote, tabelle, bordi del foglio ecc.
-    """
+    """Caption v6 — quantificata, anti-allucinazione, anti-hedging. Retry su 429."""
     if _OPENAI_CLIENT is None:
         return ""
-    try:
-        resp = _OPENAI_CLIENT.chat.completions.create(
-            model="gpt-4.1-mini",
-            temperature=0,
-            max_tokens=350,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Sei un esperto di disegno meccanico e information retrieval. "
-                        "Riceverai immagini di tavole tecniche con pezzi meccanici. "
-                        "Devi produrre una descrizione geometrica ottimizzata per ricerca ibrida "
-                        "(BM25 + vettoriale). "
-                        "Considera SOLO la geometria del pezzo. "
-                        "Non inferire, non ipotizzare, non aggiungere dettagli non osservabili. "
-                        "Ignora completamente testo, numeri, quote, simboli di quotatura, tolleranze, "
-                        "cartiglio, intestazioni, note, riferimenti e qualsiasi annotazione non geometrica."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": (
-                                "Osserva l'immagine e ricostruisci la geometria del pezzo. "
-                                "Se ci sono più viste (frontale/laterale/sezione), usale per ricostruire la geometria completa.\n\n"
-                                "Descrivi in linguaggio naturale e tecnico la geometria del pezzo.\n\n"
-                                "Linee guida:\n"
-                                "- privilegia invarianti geometriche: corpo cilindrico/cavo, foro passante, gradini, spalle, conicità, simmetrie, scanalature, raggi di raccordo, smussi.\n"
-                                "- usa lessico canonico meccanico e sinonimi (es. scanalatura anulare/circolare, gradino/spalla, smusso/chamfer).\n"
-                                "- non includere quote numeriche salvo angoli chiaramente leggibili (es. 30°, 15°).\n"
-                                "- escludi sempre testo, numeri, quote, cartiglio e qualsiasi elemento non geometrico visibile nella tavola.\n"
-                                "- rispondi in al massimo 4 frasi, per un totale massimo di 900 caratteri."
-                            ),
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/png;base64,{image_b64}"},
-                        },
-                    ],
-                },
-            ],
-        )
-        caption = (resp.choices[0].message.content or "").strip()
-        if len(caption) > 1024:
-            caption = caption[:1024]
-        return caption
-    except Exception as e:
-        print(f"⚠️ Errore nella generazione caption: {e}")
-        return ""
+    for attempt in range(5):
+        try:
+            resp = _OPENAI_CLIENT.chat.completions.create(
+                model="gpt-4.1-mini",
+                temperature=0,
+                max_tokens=500,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "Sei un esperto di disegno meccanico e information retrieval. "
+                            "Riceverai immagini di tavole tecniche con pezzi meccanici. "
+                            "Devi produrre una descrizione ottimizzata per ricerca ibrida (BM25 + vettoriale) "
+                            "per trovare pezzi meccanici geometricamente simili.\n\n"
+                            "REGOLE ASSOLUTE — violarne una invalida l'intera risposta:\n"
+                            "1. NON leggere MAI testo, sigle, codici, numeri o quote dal disegno. "
+                            "Ignora cartiglio, intestazioni, note, simboli di quotatura, tolleranze, annotazioni. "
+                            "Questo include sigle come M5, M6, M10, G 1/4, Tr16, ecc. — NON menzionarle MAI.\n"
+                            "2. NON includere quote numeriche (niente mm, diametri, raggi, lunghezze). "
+                            "Unica eccezione: angoli chiaramente visibili dalla geometria (es. 45°, 30°).\n"
+                            "3. NON specificare il tipo di filettatura (gas, metrica, conica, cilindrica, BSP, NPT). "
+                            "Scrivi solo 'filettatura interna' o 'filettatura esterna'.\n"
+                            "4. NON inventare elementi che non vedi chiaramente. "
+                            "Se non sei sicuro che un elemento esista, NON menzionarlo. "
+                            "Meglio omettere che allucinare.\n"
+                            "5. Descrivi TUTTE le parti visibili del pezzo, comprese appendici, bracci, ganasce, "
+                            "orecchie, staffe, alette e qualsiasi elemento non assial-simmetrico.\n"
+                            "6. Se ci sono viste isometriche o 3D, usale per capire la forma complessiva "
+                            "prima di descrivere i dettagli dalle sezioni.\n"
+                            "7. QUANTIFICA sempre: conta i fori, i gradini, i diametri diversi, le gole. "
+                            "Scrivi 'due fori passanti', 'tre gradini', 'quattro fori su corona circolare', non 'fori' generico.\n"
+                            "8. DESCRIVI la disposizione dei fori: su corona circolare, allineati, singolo centrale, ecc.\n"
+                            "9. Scrivi SOLO affermazioni certe. NON usare mai: 'presumibilmente', 'probabilmente', "
+                            "'potrebbe', 'sembra', 'apparentemente', 'possibile'. Se non sei sicuro, ometti."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    "Osserva l'immagine e analizza la geometria del pezzo. "
+                                    "Usa TUTTE le viste disponibili (frontale, laterale, sezione, dettagli, isometrica).\n\n"
+                                    "Scrivi una descrizione continua (NO elenchi numerati) che copra:\n\n"
+                                    "TIPO DI COMPONENTE — identifica il pezzo dalla forma complessiva "
+                                    "(nipplo, raccordo, flangia, albero, boccola, puleggia, perno, dado, distanziale, "
+                                    "manicotto, ghiera, supporto, staffa, piastra, tappo, adattatore, corpo valvola, "
+                                    "ganascia, morsetto, collettore...). "
+                                    "Usa il termine più specifico con sinonimi tra parentesi.\n\n"
+                                    "PROPORZIONI E LAVORAZIONE — descrivi le proporzioni relative del pezzo "
+                                    "(tozzo/compatto, snello/allungato, piatto/sottile, massiccio) e "
+                                    "la categoria di lavorazione deducibile dalla geometria "
+                                    "(pezzo tornito, fresato, lamiera piegata/saldata, fusione, ricavato dal pieno).\n\n"
+                                    "FORMA COMPLESSIVA — parti che formano il pezzo. Se ha appendici, "
+                                    "bracci, ganasce, alette o parti non simmetriche, descrivile. "
+                                    "Inizia dalla forma generale prima dei dettagli.\n\n"
+                                    "PROFILO ESTERNO — simmetria, sezioni cilindriche/esagonali/coniche, "
+                                    "gradini (spalle) contandoli, smussi (chamfer), raccordi, flange.\n\n"
+                                    "CAVITÀ E FORI — fori passanti/ciechi contandoli e descrivendo la disposizione "
+                                    "(corona circolare, allineati, singolo centrale), filettature interne, "
+                                    "gole anulari (sedi O-ring), gradini interni contandoli.\n\n"
+                                    "FUNZIONE OSSERVABILE — sedi di tenuta, zone filettate, "
+                                    "riduzione diametro (riduttore), bloccaggio, accoppiamento.\n\n"
+                                    "Regole:\n"
+                                    "- Menziona SOLO elementi che vedi chiaramente. Nel dubbio, ometti.\n"
+                                    "- QUANTIFICA: conta fori, gradini, diametri diversi, gole.\n"
+                                    "- NON includere sigle di filettatura (M5, M6, G1/4, ecc.).\n"
+                                    "- NON usare 'presumibilmente', 'probabilmente', 'potrebbe', 'sembra'.\n"
+                                    "- Lessico meccanico con sinonimi: gola anulare (sede O-ring), smusso (chamfer), "
+                                    "gradino (spalla), raccordo (raggio di raccordo).\n"
+                                    "- Massimo 6 frasi, massimo 1000 caratteri.\n"
+                                    "- Italiano tecnico, testo continuo."
+                                ),
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/png;base64,{image_b64}"},
+                            },
+                        ],
+                    },
+                ],
+            )
+            caption = (resp.choices[0].message.content or "").strip()
+            return caption[:1200] if len(caption) > 1200 else caption
+        except Exception as e:
+            msg = str(e)
+            if "429" in msg or "rate_limit" in msg:
+                wait = 2 ** attempt
+                print(f"  429 retry {attempt+1}/5 — sleep {wait}s")
+                time.sleep(wait)
+            else:
+                print(f"WARN caption: {e}")
+                return ""
+    print("WARN caption: max retry raggiunto")
+    return ""
 
 
 def _extract_dim_values_for_query(image_b64: str) -> str:
     """
     Estrae le dimensioni principali e le normalizza rispetto al massimo.
-    [100, 50, 20] → '1.0, 0.5, 0.2'  (scale-invariant, compatibile con dim_values in Sinde4)
+    [100, 50, 20] → '1.0, 0.5, 0.2'  (scale-invariant, compatibile con dim_values in Sinde5)
     """
     if _OPENAI_CLIENT is None:
         return ""
@@ -1766,7 +1808,7 @@ def _rerank_by_proportional_dims(
     """
     Re-ordina i risultati ibridi combinando lo score Weaviate con la similarità
     proporzionale delle dimensioni. weight=0 disabilita il re-ranking.
-    query_dim_values: stringa normalizzata '1.0, 0.5, 0.2' (dal campo dim_values di Sinde4).
+    query_dim_values: stringa normalizzata '1.0, 0.5, 0.2' (dal campo dim_values di Sinde5).
     """
     if weight <= 0 or not query_dim_values:
         return results
@@ -1983,7 +2025,7 @@ def _fusion_normalize(results, score_key="score"):
 def _do_fusion_search(client, image_b64, limit=20):
     """
     Fusion DINOv2 + Caption: fetches top-pool from both SindeDino (near_vector)
-    and Sinde4 (hybrid caption), normalizes scores, combines with weighted sum.
+    and Sinde5 (hybrid caption), normalizes scores, combines with weighted sum.
     Returns dict compatible with hybrid_search output format.
     """
     from PIL import Image as PILImage
@@ -1998,12 +2040,7 @@ def _do_fusion_search(client, image_b64, limit=20):
     pil_img = PILImage.open(BytesIO(img_bytes)).convert("RGB")
     query_embedding = _embed_image_dino(pil_img)
 
-    # 2. Caption via GPT
-    caption = describe_mechanical_part(image_b64) or ""
-    if caption:
-        print(f"[fusion] caption: {caption[:100]}...")
-
-    # 3. DINOv2 near_vector on SindeDino
+    # 2. DINOv2 near_vector on SindeDino
     dino_coll = client.collections.get(_DINO_COLLECTION_NAME)
     resp_dino = dino_coll.query.near_vector(
         near_vector=query_embedding,
@@ -2020,41 +2057,48 @@ def _do_fusion_search(client, image_b64, limit=20):
         for o in getattr(resp_dino, "objects", [])
     ]
 
-    # 4. Caption hybrid on Sinde4
-    _update_client_grpc_metadata(client)
-    cap_coll_name = _get_default_collection()
-    cap_coll = client.collections.get(cap_coll_name)
-
+    # 3. Caption hybrid on Sinde5 (skip if w_cap == 0 → pure DINOv2 mode)
     res_cap = []
-    if caption:
-        try:
-            resp_cap = cap_coll.query.hybrid(
-                query=caption,
-                alpha=0.2,
-                query_properties=["caption"],
-                limit=pool,
-                return_properties=["source_pdf", "caption", "image_b64"],
-                return_metadata=MetadataQuery(score=True),
-            )
-        except Exception as exc:
-            print(f"[fusion] hybrid caption failed, BM25 fallback: {exc}")
-            resp_cap = cap_coll.query.bm25(
-                query=caption,
-                query_properties=["caption"],
-                limit=pool,
-                return_properties=["source_pdf", "caption", "image_b64"],
-                return_metadata=MetadataQuery(score=True),
-            )
-        res_cap = [
-            {
-                "source_pdf": o.properties.get("source_pdf", ""),
-                "score": getattr(o.metadata, "score", None),
-                "properties": o.properties,
-            }
-            for o in getattr(resp_cap, "objects", [])
-        ]
+    if w_cap > 0:
+        caption = describe_mechanical_part(image_b64) or ""
+        if caption:
+            print(f"[fusion] caption: {caption[:100]}...")
 
-    # 5. Normalize
+        _update_client_grpc_metadata(client)
+        cap_coll_name = _get_default_collection()
+        cap_coll = client.collections.get(cap_coll_name)
+
+        if caption:
+            try:
+                resp_cap = cap_coll.query.hybrid(
+                    query=caption,
+                    alpha=0.2,
+                    query_properties=["caption"],
+                    limit=pool,
+                    return_properties=["source_pdf", "caption", "image_b64"],
+                    return_metadata=MetadataQuery(score=True),
+                )
+            except Exception as exc:
+                print(f"[fusion] hybrid caption failed, BM25 fallback: {exc}")
+                resp_cap = cap_coll.query.bm25(
+                    query=caption,
+                    query_properties=["caption"],
+                    limit=pool,
+                    return_properties=["source_pdf", "caption", "image_b64"],
+                    return_metadata=MetadataQuery(score=True),
+                )
+            res_cap = [
+                {
+                    "source_pdf": o.properties.get("source_pdf", ""),
+                    "score": getattr(o.metadata, "score", None),
+                    "properties": o.properties,
+                }
+                for o in getattr(resp_cap, "objects", [])
+            ]
+    else:
+        print("[fusion] DINOv2-only mode (w_cap=0)")
+
+    # 4. Normalize
     res_dino_n = _fusion_normalize(res_dino, "score")
     res_cap_n = _fusion_normalize(res_cap, "score")
 
@@ -2083,7 +2127,7 @@ def _do_fusion_search(client, image_b64, limit=20):
     print(f"[fusion] w_dino={w_dino}, w_cap={w_cap}, pool={pool}, "
           f"dino_hits={len(dino_map)}, cap_hits={len(cap_map)}, fused={len(fused)}")
 
-    # 7. Build output — prefer Sinde4 properties (name, mediaType, page_index)
+    # 7. Build output — prefer Sinde5 properties (name, mediaType, page_index)
     out = []
     for r in fused:
         pdf = r["source_pdf"]
@@ -2487,7 +2531,7 @@ async def _list_tools() -> List[types.Tool]:
                 "properties": {
                     "collection": {
                         "type": "string",
-                        "description": "Nome della collection (sempre 'Sinde4' per questo assistente)",
+                        "description": "Nome della collection (sempre 'Sinde5' per questo assistente)",
                     },
                     "query": {
                         "type": "string",
@@ -2528,8 +2572,8 @@ async def _list_tools() -> List[types.Tool]:
             tool_title = "Ricerca ibrida (BM25 + vettoriale)"
             tool_description = (
                 "Esegue una ricerca ibrida combinando ricerca keyword (BM25) e ricerca vettoriale. "
-                "Tool principale per cercare nella collection Sinde4.\n\n"
-                "ISTRUZIONI: Usa SEMPRE collection='Sinde4'. Usa query_properties=['caption'] e "
+                "Tool principale per cercare nella collection Sinde5.\n\n"
+                "ISTRUZIONI: Usa SEMPRE collection='Sinde5'. Usa query_properties=['caption'] e "
                 "return_properties=['source_pdf','caption','image_b64']. Mantieni alpha=0.2 e limit=20 "
                 "salvo richieste diverse. Per ricerche per immagini, usa image_id (da /upload-image) o image_url."
             )
