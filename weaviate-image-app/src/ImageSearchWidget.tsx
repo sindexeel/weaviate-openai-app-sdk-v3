@@ -125,7 +125,16 @@ export const ImageSearchWidget: React.FC = () => {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  // Chiudi il modal con ESC
+  // Chiudi il modal con ESC; scroll to top e blocca body scroll quando aperto
+  useEffect(() => {
+    if (enlargedImage) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [enlargedImage]);
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && enlargedImage) {
