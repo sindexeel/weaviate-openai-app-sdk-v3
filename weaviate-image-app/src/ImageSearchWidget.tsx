@@ -163,11 +163,9 @@ export const ImageSearchWidget: React.FC = () => {
       // 4) PREPARA il riassunto da mandare al modello
       const summaryParts = results.slice(0, 3).map((r: SearchResult, idx: number) => {
         const props = r.properties || {};
-        const name = props.name || "(senza nome)";
+        const name = props.name || props.source_pdf || "(senza nome)";
         const pdf = props.source_pdf || "(sorgente sconosciuta)";
-        const page = props.page_index ?? "?";
-        const mediaType = props.mediaType || "";
-        return `${idx + 1}. ${name} [${pdf} - pag. ${page}] ${mediaType}`;
+        return `${idx + 1}. ${name} [${pdf}]`;
       });
 
       const resultsSummary =
@@ -297,14 +295,14 @@ export const ImageSearchWidget: React.FC = () => {
                       if (r.properties?.image_b64) {
                         setEnlargedImage({
                           src: `data:image/png;base64,${r.properties.image_b64}`,
-                          alt: r.properties?.name || `Anteprima pagina ${r.properties?.page_index || ""}`,
+                          alt: r.properties?.name || r.properties?.source_pdf || "Anteprima",
                         });
                       }
                     }}
                   >
                     <img
                       src={`data:image/png;base64,${r.properties.image_b64}`}
-                      alt={r.properties?.name || `Anteprima pagina ${r.properties?.page_index || ""}`}
+                      alt={r.properties?.name || r.properties?.source_pdf || "Anteprima"}
                       onError={(e) => {
                         const parent = e.currentTarget.parentElement;
                         if (parent) {
@@ -316,30 +314,23 @@ export const ImageSearchWidget: React.FC = () => {
                   </div>
                 )}
 
-                {r.properties?.name && (
-                  <h3 className="result-name">
-                    {debugMode && getTestEmoji(r.properties.name) !== null && (
-                      <span style={{ marginRight: "6px" }}>
-                        {getTestEmoji(r.properties.name)}
-                      </span>
-                    )}
-                    {r.properties.name}
-                  </h3>
-                )}
+                {(() => {
+                  const displayName = r.properties?.name || r.properties?.source_pdf;
+                  return displayName ? (
+                    <h3 className="result-name">
+                      {debugMode && getTestEmoji(displayName) !== null && (
+                        <span style={{ marginRight: "6px" }}>
+                          {getTestEmoji(displayName)}
+                        </span>
+                      )}
+                      {displayName}
+                    </h3>
+                  ) : null;
+                })()}
                 <div className="result-details">
-                  {r.properties?.source_pdf && (
+                  {r.properties?.source_pdf && !r.properties?.name && (
                     <div className="result-detail-row">
                       <strong>PDF:</strong> {r.properties.source_pdf}
-                    </div>
-                  )}
-                  {typeof r.properties?.page_index === "number" && (
-                    <div className="result-detail-row">
-                      <strong>Pagina:</strong> {r.properties.page_index}
-                    </div>
-                  )}
-                  {r.properties?.mediaType && (
-                    <div className="result-detail-row">
-                      <strong>Tipo:</strong> {r.properties.mediaType}
                     </div>
                   )}
                   {debugMode ? (
@@ -361,14 +352,17 @@ export const ImageSearchWidget: React.FC = () => {
                       {typeof r.combined_score === "number" && (
                         <div><strong>combined_score:</strong> {r.combined_score.toFixed(6)}</div>
                       )}
-                      {r.properties?.name && getTestLabel(r.properties.name) !== null && (
-                        <div>
-                          <strong>output:</strong>{" "}
-                          <span className={getTestLabelClass(r.properties.name)}>
-                            {getTestLabel(r.properties.name)}
-                          </span>
-                        </div>
-                      )}
+                      {(() => {
+                        const dn = r.properties?.name || r.properties?.source_pdf;
+                        return dn && getTestLabel(dn) !== null ? (
+                          <div>
+                            <strong>output:</strong>{" "}
+                            <span className={getTestLabelClass(dn)}>
+                              {getTestLabel(dn)}
+                            </span>
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                   ) : (
                     typeof r.distance === "number" && (

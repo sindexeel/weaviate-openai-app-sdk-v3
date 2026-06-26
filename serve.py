@@ -918,7 +918,7 @@ async def image_search_http(request):
             query="",  # niente testo utente, è una pura ricerca per immagine
             limit=limit,
             # Usa il default alpha=0.2 di hybrid_search (20% vettoriale, 80% BM25)
-            query_properties=["caption", "name"],
+            query_properties=["caption", "source_pdf"],
             image_id=image_id,
             image_url=image_url,
         )
@@ -1298,7 +1298,17 @@ def hybrid_search(
         _update_client_grpc_metadata(client)
 
         if image_b64:
-            # Stesso prompt usato per l'indicizzazione Sinde4 (PROFILO/CAVITÀ/FEATURES/DIMS)
+            # Fusion search: DINOv2 + Caption (se abilitato)
+            if _FUSION_ENABLED:
+                try:
+                    result = _do_fusion_search(client, image_b64, limit)
+                    return result
+                except Exception as exc:
+                    print(f"[fusion] failed, falling back to caption-only: {exc}")
+                    import traceback
+                    traceback.print_exc()
+
+            # Fallback: caption-only hybrid search
             query_caption = describe_image_for_query(image_b64) or ""
 
             print(f"[DEBUG] query_caption (len={len(query_caption)}): {query_caption[:120]}...")
@@ -1313,10 +1323,10 @@ def hybrid_search(
                 "query": final_query,
                 "alpha": alpha,
                 "limit": limit,
-                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+                "return_properties": ["source_pdf", "caption", "image_b64"],
                 "return_metadata": MetadataQuery(score=True, distance=True),
             }
-            hybrid_params["query_properties"] = ["caption", "name"]
+            hybrid_params["query_properties"] = ["caption"]
 
             print(f"[DEBUG] hybrid_params: query={repr(hybrid_params['query'][:80])}, alpha={hybrid_params['alpha']}, limit={hybrid_params['limit']}")
 
@@ -1337,15 +1347,12 @@ def hybrid_search(
                     )
                     resp = coll.query.bm25(
                         query=bm25_query,
-                        query_properties=["caption", "name"],
+                        query_properties=["caption"],
                         limit=limit,
                         return_properties=[
-                            "name",
                             "source_pdf",
-                            "page_index",
-                            "mediaType",
+                            "caption",
                             "image_b64",
-                            "dim_values",
                         ],
                         return_metadata=MetadataQuery(score=True),
                     )
@@ -1356,7 +1363,7 @@ def hybrid_search(
                 "query": query,
                 "alpha": alpha,
                 "limit": limit,
-                "return_properties": ["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+                "return_properties": ["source_pdf", "caption", "image_b64"],
                 "return_metadata": MetadataQuery(score=True, distance=True),
             }
             if query_properties:
@@ -1366,7 +1373,7 @@ def hybrid_search(
         # Log dei risultati nel formato Colab
         print("[DEBUG] Risultati hybrid search:")
         for o in getattr(resp, "objects", []) or []:
-            name = getattr(o, "properties", {}).get("name", "N/A")
+            name = getattr(o, "properties", {}).get("source_pdf", "N/A")
             md = getattr(o, "metadata", None)
             score = getattr(md, "score", None)
             if score is not None:
@@ -1573,69 +1580,141 @@ def _vertex_embed(
 
 
 def describe_mechanical_part(image_b64: str) -> str:
-    """
-    Usa GPT per descrivere la GEOMETRIA del pezzo meccanico,
-    ignorando testo, quote, tabelle, bordi del foglio ecc.
-    """
+    """Caption v7b — discriminazione forte per tipo componente, blocco/corpo aggiunto. Retry su 429."""
     if _OPENAI_CLIENT is None:
         return ""
-    try:
-        resp = _OPENAI_CLIENT.chat.completions.create(
-            model="gpt-4.1-mini",
-            temperature=0,
-            max_tokens=350,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Sei un esperto di disegno meccanico e information retrieval. "
-                        "Riceverai immagini di tavole tecniche con pezzi meccanici. "
-                        "Devi produrre una descrizione geometrica ottimizzata per ricerca ibrida "
-                        "(BM25 + vettoriale). "
-                        "Considera SOLO la geometria del pezzo. "
-                        "Non inferire, non ipotizzare, non aggiungere dettagli non osservabili. "
-                        "Ignora completamente testo, numeri, quote, simboli di quotatura, tolleranze, "
-                        "cartiglio, intestazioni, note, riferimenti e qualsiasi annotazione non geometrica."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": (
-                                "Osserva l'immagine e ricostruisci la geometria del pezzo. "
-                                "Se ci sono più viste (frontale/laterale/sezione), usale per ricostruire la geometria completa.\n\n"
-                                "Descrivi in linguaggio naturale e tecnico la geometria del pezzo.\n\n"
-                                "Linee guida:\n"
-                                "- privilegia invarianti geometriche: corpo cilindrico/cavo, foro passante, gradini, spalle, conicità, simmetrie, scanalature, raggi di raccordo, smussi.\n"
-                                "- usa lessico canonico meccanico e sinonimi (es. scanalatura anulare/circolare, gradino/spalla, smusso/chamfer).\n"
-                                "- non includere quote numeriche salvo angoli chiaramente leggibili (es. 30°, 15°).\n"
-                                "- escludi sempre testo, numeri, quote, cartiglio e qualsiasi elemento non geometrico visibile nella tavola.\n"
-                                "- rispondi in al massimo 4 frasi, per un totale massimo di 900 caratteri."
-                            ),
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/png;base64,{image_b64}"},
-                        },
-                    ],
-                },
-            ],
-        )
-        caption = (resp.choices[0].message.content or "").strip()
-        if len(caption) > 1024:
-            caption = caption[:1024]
-        return caption
-    except Exception as e:
-        print(f"⚠️ Errore nella generazione caption: {e}")
-        return ""
+    for attempt in range(5):
+        try:
+            resp = _OPENAI_CLIENT.chat.completions.create(
+                model="gpt-4.1-mini",
+                temperature=0,
+                max_tokens=500,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "Sei un esperto di disegno meccanico e information retrieval. "
+                            "Riceverai immagini di tavole tecniche con pezzi meccanici. "
+                            "Devi produrre una descrizione ottimizzata per ricerca ibrida (BM25 + vettoriale) "
+                            "per trovare pezzi meccanici geometricamente simili.\n\n"
+                            "OBIETTIVO CRITICO: pezzi di TIPO diverso devono produrre descrizioni MOLTO diverse. "
+                            "Una flangia e un albero sono componenti radicalmente diversi per topologia, proporzioni e funzione. "
+                            "Un blocco fresato e un raccordo tornito sono componenti radicalmente diversi. "
+                            "La tua descrizione deve catturare queste differenze in modo netto.\n\n"
+                            "REGOLE ASSOLUTE — violarne una invalida l'intera risposta:\n"
+                            "1. NON leggere MAI testo, sigle, codici, numeri o quote dal disegno. "
+                            "Ignora cartiglio, intestazioni, note, simboli di quotatura, tolleranze, annotazioni. "
+                            "Questo include sigle come M5, M6, M10, G 1/4, Tr16, ecc. — NON menzionarle MAI.\n"
+                            "2. NON includere quote numeriche (niente mm, diametri, raggi, lunghezze). "
+                            "Unica eccezione: angoli chiaramente visibili dalla geometria (es. 45°, 30°).\n"
+                            "3. NON specificare il tipo di filettatura (gas, metrica, conica, cilindrica, BSP, NPT). "
+                            "Scrivi solo 'filettatura interna' o 'filettatura esterna'.\n"
+                            "4. NON inventare elementi che non vedi chiaramente. "
+                            "Se non sei sicuro che un elemento esista, NON menzionarlo. "
+                            "Meglio omettere che allucinare.\n"
+                            "5. Descrivi TUTTE le parti visibili del pezzo, comprese appendici, bracci, ganasce, "
+                            "orecchie, staffe, alette e qualsiasi elemento non assial-simmetrico.\n"
+                            "6. Se ci sono viste isometriche o 3D, usale per capire la forma complessiva "
+                            "prima di descrivere i dettagli dalle sezioni.\n"
+                            "7. QUANTIFICA sempre: conta i fori, i gradini, i diametri diversi, le gole. "
+                            "Scrivi 'due fori passanti', 'tre gradini', 'quattro fori su corona circolare', non 'fori' generico.\n"
+                            "8. DESCRIVI la disposizione dei fori: su corona circolare, allineati, singolo centrale, ecc.\n"
+                            "9. Scrivi SOLO affermazioni certe. NON usare mai: 'presumibilmente', 'probabilmente', "
+                            "'potrebbe', 'sembra', 'apparentemente', 'possibile'. Se non sei sicuro, ometti.\n"
+                            "10. La PRIMA FRASE deve identificare il TIPO e la MACRO-TOPOLOGIA del pezzo. "
+                            "Usa esattamente questo formato: '[TIPO] — [topologia].' Esempi:\n"
+                            "   - 'Flangia (disco forato) — corpo piatto a disco con corona di fori.'\n"
+                            "   - 'Albero (shaft) — corpo cilindrico allungato sviluppato in lunghezza.'\n"
+                            "   - 'Raccordo (nipplo) — corpo tozzo e compatto tornito con cavità passante.'\n"
+                            "   - 'Staffa (supporto) — piastra sagomata con bracci e fori di fissaggio.'\n"
+                            "   - 'Boccola (manicotto) — cilindro cavo corto con pareti spesse.'\n"
+                            "   - 'Blocco (corpo supporto/housing) — solido massiccio fresato dal pieno con foro centrale e fori di fissaggio.'\n"
+                            "La macro-topologia deve distinguere chiaramente:\n"
+                            "   - DISCO/PIATTO (flangia, piastra): sviluppo radiale >> assiale\n"
+                            "   - ALLUNGATO (albero, perno, asta): sviluppo assiale >> radiale\n"
+                            "   - TOZZO/COMPATTO (raccordo, boccola, dado): proporzioni equilibrate, TORNITO\n"
+                            "   - MASSICCIO/BLOCCO (corpo, housing, blocco valvola): solido squadrato/cubico FRESATO dal pieno, "
+                            "con fori e cavità ricavate per asportazione. NON confondere con raccordi torniti.\n"
+                            "   - SAGOMATO (staffa, ganascia, supporto): geometria non assial-simmetrica\n\n"
+                            "ATTENZIONE: se il pezzo ha forma squadrata/cubica/rettangolare con fori ricavati "
+                            "dal pieno e smussi sugli spigoli, è un BLOCCO (corpo/housing), NON un raccordo."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    "Osserva l'immagine e analizza la geometria del pezzo. "
+                                    "Usa TUTTE le viste disponibili (frontale, laterale, sezione, dettagli, isometrica).\n\n"
+                                    "Scrivi una descrizione continua (NO elenchi numerati) che copra, IN QUESTO ORDINE:\n\n"
+                                    "1. TIPO + MACRO-TOPOLOGIA (PRIMA FRASE OBBLIGATORIA) — "
+                                    "identifica il pezzo e la sua topologia dominante. "
+                                    "Formato: '[Tipo] ([sinonimo]) — [topologia].' "
+                                    "Scegli il tipo più specifico tra: "
+                                    "nipplo, raccordo, flangia, albero, boccola, puleggia, perno, dado, distanziale, "
+                                    "manicotto, ghiera, supporto, staffa, piastra, tappo, adattatore, corpo valvola, "
+                                    "ganascia, morsetto, collettore, disco, anello, asta, tubo, "
+                                    "blocco, corpo, housing, basamento.\n\n"
+                                    "2. PROPORZIONI E LAVORAZIONE — "
+                                    "rapporto dimensionale dominante (diametro >> lunghezza = disco/flangia; "
+                                    "lunghezza >> diametro = albero/perno; bilanciato = raccordo/boccola; "
+                                    "squadrato/cubico = blocco/corpo) e "
+                                    "categoria di lavorazione (tornito, fresato dal pieno, lamiera piegata/saldata, "
+                                    "fusione, ricavato dal pieno).\n\n"
+                                    "3. FORMA COMPLESSIVA — parti che formano il pezzo. "
+                                    "Se ha appendici, bracci, ganasce, alette o parti non simmetriche, descrivile. "
+                                    "Inizia dalla forma generale prima dei dettagli.\n\n"
+                                    "4. PROFILO ESTERNO — simmetria, sezioni cilindriche/esagonali/coniche/squadrate, "
+                                    "gradini (spalle) contandoli, smussi (chamfer), raccordi, flange.\n\n"
+                                    "5. CAVITÀ E FORI — fori passanti/ciechi contandoli e descrivendo la disposizione "
+                                    "(corona circolare, allineati, singolo centrale, agli angoli), filettature interne, "
+                                    "gole anulari (sedi O-ring), gradini interni contandoli, "
+                                    "cave per chiavetta (linguetta), scanalature.\n\n"
+                                    "6. FUNZIONE OSSERVABILE — sedi di tenuta, zone filettate, "
+                                    "riduzione diametro (riduttore), bloccaggio, accoppiamento, "
+                                    "trasmissione coppia (scanalature, chiavette), alloggiamento (housing).\n\n"
+                                    "Regole:\n"
+                                    "- La PRIMA FRASE determina la categoria del pezzo — sceglila con cura.\n"
+                                    "- Se il pezzo è squadrato/cubico con fori ricavati, è un BLOCCO non un raccordo.\n"
+                                    "- Menziona SOLO elementi che vedi chiaramente. Nel dubbio, ometti.\n"
+                                    "- QUANTIFICA: conta fori, gradini, diametri diversi, gole, denti.\n"
+                                    "- NON includere sigle di filettatura (M5, M6, G1/4, ecc.).\n"
+                                    "- NON usare 'presumibilmente', 'probabilmente', 'potrebbe', 'sembra'.\n"
+                                    "- Lessico meccanico con sinonimi: gola anulare (sede O-ring), smusso (chamfer), "
+                                    "gradino (spalla), raccordo (raggio di raccordo), cava per chiavetta (linguetta).\n"
+                                    "- Massimo 6 frasi, massimo 1000 caratteri.\n"
+                                    "- Italiano tecnico, testo continuo."
+                                ),
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/png;base64,{image_b64}"},
+                            },
+                        ],
+                    },
+                ],
+            )
+            caption = (resp.choices[0].message.content or "").strip()
+            return caption[:1200] if len(caption) > 1200 else caption
+        except Exception as e:
+            msg = str(e)
+            if "429" in msg or "rate_limit" in msg:
+                wait = 2 ** attempt
+                print(f"  429 retry {attempt+1}/5 — sleep {wait}s")
+                time.sleep(wait)
+            else:
+                print(f"WARN caption: {e}")
+                return ""
+    print("WARN caption: max retry raggiunto")
+    return ""
 
 
 def _extract_dim_values_for_query(image_b64: str) -> str:
     """
     Estrae le dimensioni principali e le normalizza rispetto al massimo.
-    [100, 50, 20] → '1.0, 0.5, 0.2'  (scale-invariant, compatibile con dim_values in Sinde4)
+    [100, 50, 20] → '1.0, 0.5, 0.2'  (scale-invariant, compatibile con dim_values in Sinde5)
     """
     if _OPENAI_CLIENT is None:
         return ""
@@ -1759,7 +1838,7 @@ def _rerank_by_proportional_dims(
     """
     Re-ordina i risultati ibridi combinando lo score Weaviate con la similarità
     proporzionale delle dimensioni. weight=0 disabilita il re-ranking.
-    query_dim_values: stringa normalizzata '1.0, 0.5, 0.2' (dal campo dim_values di Sinde4).
+    query_dim_values: stringa normalizzata '1.0, 0.5, 0.2' (dal campo dim_values di Sinde5).
     """
     if weight <= 0 or not query_dim_values:
         return results
@@ -1886,6 +1965,224 @@ def describe_image_for_query(image_b64: str) -> Optional[str]:
     return caption or None
 
 
+# =====================================================
+# DINOv2 + Fusion Search (DINOv2 image + Caption hybrid)
+# =====================================================
+
+_DINO_COLLECTION_NAME = os.environ.get("DINO_COLLECTION", "SindeDino")
+_FUSION_W_DINO = float(os.environ.get("FUSION_W_DINO", "0.5"))
+_FUSION_W_CAP = float(os.environ.get("FUSION_W_CAP", "0.5"))
+_FUSION_POOL = int(os.environ.get("FUSION_POOL", "50"))
+_FUSION_ENABLED = os.environ.get("FUSION_ENABLED", "1").lower() in ("1", "true", "yes")
+
+_dino_model = None
+_dino_processor = None
+_dino_device = None
+
+
+def _ensure_dino_loaded():
+    """Lazy-load DINOv2 model on first use."""
+    global _dino_model, _dino_processor, _dino_device
+    if _dino_model is not None:
+        return True
+    try:
+        import torch
+        from transformers import AutoImageProcessor, AutoModel
+
+        _dino_device = "cuda" if torch.cuda.is_available() else "cpu"
+        model_name = "facebook/dinov2-base"
+        print(f"[dino] Loading {model_name} on {_dino_device}...")
+        _dino_processor = AutoImageProcessor.from_pretrained(model_name)
+        _dino_model = AutoModel.from_pretrained(model_name).to(_dino_device).eval()
+        print(f"[dino] Model loaded (768 dim)")
+        return True
+    except Exception as exc:
+        print(f"[dino] Failed to load DINOv2: {exc}")
+        return False
+
+
+def _preprocess_drawing(pil_image):
+    """Crop cartiglio, Otsu binarization, connected component filtering, morph close."""
+    import cv2
+    import numpy as np
+    from PIL import Image as PILImage
+
+    img = np.array(pil_image)
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY) if len(img.shape) == 3 else img.copy()
+    h, w = gray.shape
+
+    gray = gray[: int(h * 0.82), : int(w * 0.95)]
+
+    _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
+    clean = np.zeros_like(binary)
+    for i in range(1, num_labels):
+        if stats[i, cv2.CC_STAT_AREA] >= 3000:
+            clean[labels == i] = 255
+
+    kernel = np.ones((3, 3), np.uint8)
+    clean = cv2.morphologyEx(clean, cv2.MORPH_CLOSE, kernel, iterations=1)
+
+    result_rgb = cv2.cvtColor(255 - clean, cv2.COLOR_GRAY2RGB)
+    return PILImage.fromarray(result_rgb)
+
+
+def _embed_image_dino(pil_image):
+    """Preprocess + DINOv2 CLS embedding (768-dim, L2-normalized)."""
+    import torch
+
+    _ensure_dino_loaded()
+    clean = _preprocess_drawing(pil_image)
+    inputs = _dino_processor(images=clean, return_tensors="pt").to(_dino_device)
+    with torch.no_grad():
+        outputs = _dino_model(**inputs)
+    cls = outputs.last_hidden_state[:, 0]
+    cls = cls / cls.norm(dim=-1, keepdim=True)
+    return cls[0].cpu().tolist()
+
+
+def _fusion_normalize(results, score_key="score"):
+    """Min-max normalize scores to [0, 1]."""
+    scores = [r.get(score_key) or 0 for r in results]
+    if not scores:
+        return results
+    mn, mx = min(scores), max(scores)
+    rng = mx - mn if mx > mn else 1.0
+    return [{**r, "norm_score": ((r.get(score_key) or 0) - mn) / rng} for r in results]
+
+
+def _do_fusion_search(client, image_b64, limit=20):
+    """
+    Fusion DINOv2 + Caption: fetches top-pool from both SindeDino (near_vector)
+    and Sinde5 (hybrid caption), normalizes scores, combines with weighted sum.
+    Returns dict compatible with hybrid_search output format.
+    """
+    from PIL import Image as PILImage
+    from io import BytesIO
+
+    pool = _FUSION_POOL
+    w_dino = _FUSION_W_DINO
+    w_cap = _FUSION_W_CAP
+
+    # 1. DINOv2 embedding
+    img_bytes = base64.b64decode(image_b64)
+    pil_img = PILImage.open(BytesIO(img_bytes)).convert("RGB")
+    query_embedding = _embed_image_dino(pil_img)
+
+    # 2. DINOv2 near_vector on SindeDino
+    dino_coll = client.collections.get(_DINO_COLLECTION_NAME)
+    resp_dino = dino_coll.query.near_vector(
+        near_vector=query_embedding,
+        limit=pool,
+        return_properties=["source_pdf", "image_b64"],
+        return_metadata=MetadataQuery(distance=True),
+    )
+    res_dino = [
+        {
+            "source_pdf": o.properties.get("source_pdf", ""),
+            "score": 1.0 - (getattr(o.metadata, "distance", 0) or 0),
+            "image_b64": o.properties.get("image_b64"),
+        }
+        for o in getattr(resp_dino, "objects", [])
+    ]
+
+    # 3. Caption hybrid on Sinde5 (skip if w_cap == 0 → pure DINOv2 mode)
+    res_cap = []
+    if w_cap > 0:
+        caption = describe_mechanical_part(image_b64) or ""
+        if caption:
+            print(f"[fusion] caption: {caption[:100]}...")
+
+        _update_client_grpc_metadata(client)
+        cap_coll_name = _get_default_collection()
+        cap_coll = client.collections.get(cap_coll_name)
+
+        if caption:
+            try:
+                resp_cap = cap_coll.query.hybrid(
+                    query=caption,
+                    alpha=0.2,
+                    query_properties=["caption"],
+                    limit=pool,
+                    return_properties=["source_pdf", "caption", "image_b64"],
+                    return_metadata=MetadataQuery(score=True),
+                )
+            except Exception as exc:
+                print(f"[fusion] hybrid caption failed, BM25 fallback: {exc}")
+                resp_cap = cap_coll.query.bm25(
+                    query=caption,
+                    query_properties=["caption"],
+                    limit=pool,
+                    return_properties=["source_pdf", "caption", "image_b64"],
+                    return_metadata=MetadataQuery(score=True),
+                )
+            res_cap = [
+                {
+                    "source_pdf": o.properties.get("source_pdf", ""),
+                    "score": getattr(o.metadata, "score", None),
+                    "properties": o.properties,
+                }
+                for o in getattr(resp_cap, "objects", [])
+            ]
+    else:
+        print("[fusion] DINOv2-only mode (w_cap=0)")
+
+    # 4. Normalize
+    res_dino_n = _fusion_normalize(res_dino, "score")
+    res_cap_n = _fusion_normalize(res_cap, "score")
+
+    dino_map = {r["source_pdf"]: r["norm_score"] for r in res_dino_n}
+    dino_img_map = {r["source_pdf"]: r.get("image_b64") for r in res_dino}
+
+    cap_map = {r["source_pdf"]: r["norm_score"] for r in res_cap_n}
+    cap_props_map = {r["source_pdf"]: r.get("properties", {}) for r in res_cap}
+
+    # 6. Fuse
+    all_pdfs = set(dino_map.keys()) | set(cap_map.keys())
+    fused = []
+    for pdf in all_pdfs:
+        d = dino_map.get(pdf, 0.0)
+        c = cap_map.get(pdf, 0.0)
+        fused.append({
+            "source_pdf": pdf,
+            "fusion_score": w_dino * d + w_cap * c,
+            "dino_norm": d,
+            "cap_norm": c,
+        })
+
+    fused.sort(key=lambda x: x["fusion_score"], reverse=True)
+    fused = fused[:limit]
+
+    print(f"[fusion] w_dino={w_dino}, w_cap={w_cap}, pool={pool}, "
+          f"dino_hits={len(dino_map)}, cap_hits={len(cap_map)}, fused={len(fused)}")
+
+    # 7. Build output — prefer Sinde5 properties (name, mediaType, page_index)
+    out = []
+    for r in fused:
+        pdf = r["source_pdf"]
+        if pdf in cap_props_map and cap_props_map[pdf]:
+            props = dict(cap_props_map[pdf])
+        else:
+            props = {
+                "source_pdf": pdf,
+                "name": pdf.replace(".pdf", ""),
+                "image_b64": dino_img_map.get(pdf),
+            }
+        out.append({
+            "uuid": "",
+            "properties": props,
+            "bm25_score": r["fusion_score"],
+            "distance": None,
+        })
+
+    for i, r in enumerate(fused[:5]):
+        print(f"[fusion] {i + 1}. {r['source_pdf']:35s} "
+              f"f={r['fusion_score']:.4f} d={r['dino_norm']:.3f} c={r['cap_norm']:.3f}")
+
+    return {"count": len(out), "results": out}
+
+
 @mcp.tool()
 def insert_image_vertex(
     collection: str,
@@ -2003,7 +2300,7 @@ def image_search_vertex(
         resp = coll.query.near_image(
             image_b64,
             limit=limit,
-            return_properties=["name", "source_pdf", "page_index", "mediaType", "image_b64"],
+            return_properties=["source_pdf", "caption", "image_b64"],
             return_metadata=MetadataQuery(distance=True),
         )
         out = []
@@ -2264,7 +2561,7 @@ async def _list_tools() -> List[types.Tool]:
                 "properties": {
                     "collection": {
                         "type": "string",
-                        "description": "Nome della collection (sempre 'Sinde4' per questo assistente)",
+                        "description": "Nome della collection (sempre 'Sinde5' per questo assistente)",
                     },
                     "query": {
                         "type": "string",
@@ -2305,9 +2602,9 @@ async def _list_tools() -> List[types.Tool]:
             tool_title = "Ricerca ibrida (BM25 + vettoriale)"
             tool_description = (
                 "Esegue una ricerca ibrida combinando ricerca keyword (BM25) e ricerca vettoriale. "
-                "Tool principale per cercare nella collection Sinde4.\n\n"
-                "ISTRUZIONI: Usa SEMPRE collection='Sinde4'. Usa query_properties=['caption','name'] e "
-                "return_properties=['name','source_pdf','page_index','mediaType']. Mantieni alpha=0.2 e limit=20 "
+                "Tool principale per cercare nella collection Sinde5.\n\n"
+                "ISTRUZIONI: Usa SEMPRE collection='Sinde5'. Usa query_properties=['caption'] e "
+                "return_properties=['source_pdf','caption','image_b64']. Mantieni alpha=0.2 e limit=20 "
                 "salvo richieste diverse. Per ricerche per immagini, usa image_id (da /upload-image) o image_url."
             )
 
