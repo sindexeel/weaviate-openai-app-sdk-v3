@@ -14,7 +14,7 @@ const MCP_BASE_URL = (() => {
 // Imposta a `true` per mostrare uuid, distance raw e bm25_score su ogni card
 // e le emoji ✅/❌ basate sui test case in public/test_cases.json.
 // Cambia questo valore nel codice, rebuilda e rideploya per attivare/disattivare.
-const DEBUG_MODE = true;
+const DEBUG_MODE = false;
 
 type TestCase = {
   input: string;
@@ -40,6 +40,7 @@ type SearchResult = {
 
 export const ImageSearchWidget: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -81,6 +82,17 @@ export const ImageSearchWidget: React.FC = () => {
     if (activeTestCase.unwanted.some((u) => name.includes(u))) return "unwanted";
     return "neutral";
   };
+
+  // Crea/revoca l'object URL per l'anteprima del file di input
+  useEffect(() => {
+    if (!file) {
+      setFilePreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setFilePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   // Chiudi il modal con ESC
   useEffect(() => {
@@ -142,7 +154,7 @@ export const ImageSearchWidget: React.FC = () => {
         body: JSON.stringify({
           collection: "Sinde2",
           image_id: imageId,
-          limit: 20,
+          limit: 10,
         }),
       });
 
@@ -266,6 +278,23 @@ export const ImageSearchWidget: React.FC = () => {
             Progetto selezionato: <strong>{file.name}</strong>
           </div>
         )}
+        {file && filePreviewUrl && (
+          <div className="input-preview">
+            {file.type === "application/pdf" ? (
+              <embed
+                src={filePreviewUrl}
+                type="application/pdf"
+                className="input-preview-pdf"
+              />
+            ) : (
+              <img
+                src={filePreviewUrl}
+                alt="Anteprima progetto selezionato"
+                className="input-preview-img"
+              />
+            )}
+          </div>
+        )}
         <button
           onClick={handleUploadAndSearch}
           disabled={!file || isLoading}
@@ -285,8 +314,6 @@ export const ImageSearchWidget: React.FC = () => {
           <div className="results-grid">
             {results.map((r, idx) => (
               <div key={idx} className="result-card">
-                <div className="result-index">#{idx + 1}</div>
-
                 {/* Anteprima immagine da image_b64 */}
                 {r.properties?.image_b64 && (
                   <div
@@ -314,6 +341,8 @@ export const ImageSearchWidget: React.FC = () => {
                   </div>
                 )}
 
+                <div className="result-info">
+                <div className="result-index">#{idx + 1}</div>
                 {(() => {
                   const displayName = r.properties?.name || r.properties?.source_pdf;
                   return displayName ? (
@@ -328,11 +357,6 @@ export const ImageSearchWidget: React.FC = () => {
                   ) : null;
                 })()}
                 <div className="result-details">
-                  {r.properties?.source_pdf && !r.properties?.name && (
-                    <div className="result-detail-row">
-                      <strong>PDF:</strong> {r.properties.source_pdf}
-                    </div>
-                  )}
                   {debugMode ? (
                     <div className="debug-panel">
                       <div className="debug-panel-title">DEBUG</div>
@@ -371,6 +395,7 @@ export const ImageSearchWidget: React.FC = () => {
                       </div>
                     )
                   )}
+                </div>
                 </div>
               </div>
             ))}
