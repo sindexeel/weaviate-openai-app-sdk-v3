@@ -1,5 +1,11 @@
 // src/ImageSearchWidget.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import * as pdfjsLib from "pdfjs-dist";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url
+).toString();
 
 // Usa l'origine dell'asset JS servito dal backend corrente.
 // In questo modo il widget chiama sempre lo stesso host da cui e' stato caricato.
@@ -41,6 +47,7 @@ type SearchResult = {
 export const ImageSearchWidget: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+  const pdfCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -87,6 +94,30 @@ export const ImageSearchWidget: React.FC = () => {
   useEffect(() => {
     if (!file) {
       setFilePreviewUrl(null);
+      return;
+    }
+    if (file.type === "application/pdf") {
+      // Renderizza la prima pagina del PDF su canvas con PDF.js
+      const url = URL.createObjectURL(file);
+      const render = async () => {
+        try {
+          const pdf = await pdfjsLib.getDocument({ url }).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = pdfCanvasRef.current;
+          if (!canvas) return;
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+          await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+        } catch {
+          // se il rendering fallisce, lascia il canvas vuoto
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      };
+      render();
       return;
     }
     const url = URL.createObjectURL(file);
@@ -278,21 +309,17 @@ export const ImageSearchWidget: React.FC = () => {
             Progetto selezionato: <strong>{file.name}</strong>
           </div>
         )}
-        {file && filePreviewUrl && (
+        {file && (
           <div className="input-preview">
             {file.type === "application/pdf" ? (
-              <embed
-                src={filePreviewUrl}
-                type="application/pdf"
-                className="input-preview-pdf"
-              />
-            ) : (
+              <canvas ref={pdfCanvasRef} className="input-preview-img" />
+            ) : filePreviewUrl ? (
               <img
                 src={filePreviewUrl}
                 alt="Anteprima progetto selezionato"
                 className="input-preview-img"
               />
-            )}
+            ) : null}
           </div>
         )}
         <button
