@@ -350,6 +350,23 @@ export const ImageSearchWidget: React.FC = () => {
           <div className="results-grid">
             {results.map((r, idx) => (
               <div key={idx} className="result-card">
+                <div className="result-header">
+                  <div className="result-index">#{idx + 1}</div>
+                  {(() => {
+                    const displayName = r.properties?.name || r.properties?.source_pdf;
+                    return displayName ? (
+                      <h3 className="result-name">
+                        {debugMode && getTestEmoji(displayName) !== null && (
+                          <span style={{ marginRight: "6px" }}>
+                            {getTestEmoji(displayName)}
+                          </span>
+                        )}
+                        {displayName}
+                      </h3>
+                    ) : null;
+                  })()}
+                </div>
+
                 {/* Anteprima immagine da image_b64 */}
                 {r.properties?.image_b64 && (
                   <div
@@ -378,20 +395,6 @@ export const ImageSearchWidget: React.FC = () => {
                 )}
 
                 <div className="result-info">
-                <div className="result-index">#{idx + 1}</div>
-                {(() => {
-                  const displayName = r.properties?.name || r.properties?.source_pdf;
-                  return displayName ? (
-                    <h3 className="result-name">
-                      {debugMode && getTestEmoji(displayName) !== null && (
-                        <span style={{ marginRight: "6px" }}>
-                          {getTestEmoji(displayName)}
-                        </span>
-                      )}
-                      {displayName}
-                    </h3>
-                  ) : null;
-                })()}
                 <div className="result-details">
                   {debugMode ? (
                     <div className="debug-panel">
