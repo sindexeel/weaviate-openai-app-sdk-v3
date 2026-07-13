@@ -17,6 +17,12 @@ const MCP_BASE_URL = (() => {
   }
 })();
 
+// PDF.js v6 decodifica JBIG2/OpenJPEG (comuni nei disegni CAD scansionati in
+// bianco e nero) tramite moduli WASM separati, che vanno indicati esplicitamente
+// via wasmUrl: senza, la decodifica fallisce in silenzio e la pagina resta bianca.
+// I file sono copiati in dist/assets/wasm/ da vite.config.ts (copyPdfjsWasm).
+const PDFJS_WASM_URL = `${MCP_BASE_URL}/assets/wasm/`;
+
 // Imposta a `true` per mostrare uuid, distance raw e bm25_score su ogni card
 // e le emoji ✅/❌ basate sui test case in public/test_cases.json.
 // Cambia questo valore nel codice, rebuilda e rideploya per attivare/disattivare.
@@ -47,6 +53,7 @@ type SearchResult = {
 export const ImageSearchWidget: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [results, setResults] = useState<SearchResult[] | null>(null);
@@ -88,37 +95,69 @@ export const ImageSearchWidget: React.FC = () => {
 
   // Crea/revoca l'object URL per l'anteprima del file di input
   useEffect(() => {
+    setPreviewError(null);
+    setFilePreviewUrl(null);
+
     if (!file) {
-      setFilePreviewUrl(null);
       return;
     }
+
     if (file.type === "application/pdf") {
       // Renderizza la prima pagina del PDF su canvas con PDF.js
+      let cancelled = false;
       const url = URL.createObjectURL(file);
       const render = async () => {
         try {
-          const pdf = await pdfjsLib.getDocument({ url }).promise;
+          const pdf = await pdfjsLib.getDocument({ url, wasmUrl: PDFJS_WASM_URL }).promise;
           const page = await pdf.getPage(1);
           const viewport = page.getViewport({ scale: 1.5 });
           const canvas = pdfCanvasRef.current;
-          if (!canvas) return;
+          if (!canvas || cancelled) return;
           canvas.width = viewport.width;
           canvas.height = viewport.height;
           const ctx = canvas.getContext("2d");
-          if (!ctx) return;
+          if (!ctx) throw new Error("Contesto canvas non disponibile");
           await page.render({ canvasContext: ctx, viewport, canvas }).promise;
-        } catch {
-          // se il rendering fallisce, lascia il canvas vuoto
+        } catch (err) {
+          if (!cancelled) {
+            console.error("Errore rendering anteprima PDF:", err);
+            setPreviewError("Anteprima del PDF non disponibile.");
+          }
         } finally {
           URL.revokeObjectURL(url);
         }
       };
       render();
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
-    const url = URL.createObjectURL(file);
-    setFilePreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
+
+    if (file.type.startsWith("image/")) {
+      // Carica l'immagine prima di mostrarla: revocare l'object URL prima che il
+      // caricamento sia completo lascerebbe l'<img> a puntare a un blob invalidato
+      // (anteprima bianca in modo intermittente).
+      let cancelled = false;
+      const url = URL.createObjectURL(file);
+      const probe = new Image();
+      probe.onload = () => {
+        if (!cancelled) setFilePreviewUrl(url);
+      };
+      probe.onerror = () => {
+        if (!cancelled) {
+          console.error("Errore caricamento anteprima immagine");
+          setPreviewError("Anteprima dell'immagine non disponibile.");
+        }
+      };
+      probe.src = url;
+      return () => {
+        cancelled = true;
+        URL.revokeObjectURL(url);
+      };
+    }
+
+    // Formato senza anteprima supportata lato client (es. DWG)
+    setPreviewError("Anteprima non disponibile per questo formato di file.");
   }, [file]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -296,7 +335,9 @@ export const ImageSearchWidget: React.FC = () => {
         )}
         {file && (
           <div className="input-preview">
-            {file.type === "application/pdf" ? (
+            {previewError ? (
+              <div className="input-preview-error">{previewError}</div>
+            ) : file.type === "application/pdf" ? (
               <canvas ref={pdfCanvasRef} className="input-preview-img" />
             ) : filePreviewUrl ? (
               <img

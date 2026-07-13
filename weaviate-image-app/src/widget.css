@@ -302,3 +302,10 @@ body {
   height: 300px;
   border: none;
 }
+
+.input-preview-error {
+  padding: 16px 24px;
+  text-align: center;
+  font-size: 13px;
+  color: light-dark(#856404, #ffc107);
+}
