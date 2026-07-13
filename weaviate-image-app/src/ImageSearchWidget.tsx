@@ -53,10 +53,6 @@ export const ImageSearchWidget: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [testCases, setTestCases] = useState<TestCase[]>([]);
-  const [enlargedImage, setEnlargedImage] = useState<{
-    src: string;
-    alt: string;
-  } | null>(null);
 
   // Carica i test case dal JSON esterno (solo in debug mode)
   useEffect(() => {
@@ -124,26 +120,6 @@ export const ImageSearchWidget: React.FC = () => {
     setFilePreviewUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
-
-  // Chiudi il modal con ESC; scroll to top e blocca body scroll quando aperto
-  useEffect(() => {
-    if (enlargedImage) {
-      window.scrollTo({ top: 0, behavior: "instant" });
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-  }, [enlargedImage]);
-
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && enlargedImage) {
-        setEnlargedImage(null);
-      }
-    };
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [enlargedImage]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null;
@@ -369,17 +345,7 @@ export const ImageSearchWidget: React.FC = () => {
 
                 {/* Anteprima immagine da image_b64 */}
                 {r.properties?.image_b64 && (
-                  <div
-                    className="result-preview"
-                    onClick={() => {
-                      if (r.properties?.image_b64) {
-                        setEnlargedImage({
-                          src: `data:image/png;base64,${r.properties.image_b64}`,
-                          alt: r.properties?.name || r.properties?.source_pdf || "Anteprima",
-                        });
-                      }
-                    }}
-                  >
+                  <div className="result-preview">
                     <img
                       src={`data:image/png;base64,${r.properties.image_b64}`}
                       alt={r.properties?.name || r.properties?.source_pdf || "Anteprima"}
@@ -390,7 +356,6 @@ export const ImageSearchWidget: React.FC = () => {
                         }
                       }}
                     />
-                    <div className="preview-zoom-icon">🔍</div>
                   </div>
                 )}
 
@@ -444,28 +409,6 @@ export const ImageSearchWidget: React.FC = () => {
 
       {results && results.length === 0 && (
         <div className="empty-results">Nessun progetto trovato.</div>
-      )}
-
-      {/* Modal per immagine ingrandita */}
-      {enlargedImage && (
-        <div className="modal-overlay" onClick={() => setEnlargedImage(null)}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setEnlargedImage(null);
-            }}
-            className="modal-close"
-            aria-label="Chiudi"
-          >
-            ×
-          </button>
-          <img
-            src={enlargedImage.src}
-            alt={enlargedImage.alt}
-            className="modal-image"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
       )}
     </div>
   );
