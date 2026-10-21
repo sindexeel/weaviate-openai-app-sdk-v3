@@ -63,16 +63,24 @@ def _public_origin() -> str:
 
 
 def _widget_csp() -> Dict[str, List[str]]:
-    """Allowlist CSP legacy Apps SDK (skybridge).
-
-    resource_domains: script, CSS e immagini.
-    connect_domains: fetch del widget verso le API dello stesso host.
-    Nessun wildcard: ChatGPT rifiuta le origini con asterisco.
-    """
+    """Allowlist legacy ``openai/widgetCSP`` (snake_case)."""
     origin = _public_origin()
     return {
         "connect_domains": [origin],
         "resource_domains": [origin],
+    }
+
+
+def _widget_ui_csp() -> Dict[str, List[str]]:
+    """Allowlist attuale ``_meta.ui.csp``.
+
+    ChatGPT applica script-src, style-src e img-src da resourceDomains.
+    La chiave legacy widgetCSP, da sola, resta fuori da quella policy.
+    """
+    origin = _public_origin()
+    return {
+        "connectDomains": [origin],
+        "resourceDomains": [origin],
     }
 
 
@@ -648,6 +656,7 @@ def _resource_meta(widget: SindeWidget) -> Dict[str, Any]:
     """
     meta = _tool_meta(widget)
     meta["openai/widgetCSP"] = _widget_csp()
+    meta["ui"] = {"csp": _widget_ui_csp()}
     return meta
 
 
@@ -2553,7 +2562,7 @@ async def _list_tools() -> List[types.Tool]:
                 "required": [],
                 "additionalProperties": False,
             },
-            _meta=_tool_meta(w),  # <<< QUI sta openai/outputTemplate ecc.
+            _meta=_resource_meta(w),
             annotations={
                 "destructiveHint": False,
                 "openWorldHint": False,
@@ -2713,7 +2722,8 @@ async def _handle_read_resource(req: types.ReadResourceRequest) -> types.ServerR
     print(
         "[widget] resources/read "
         f"uri={w.template_uri} "
-        f"csp={_widget_csp()}"
+        f"widgetCSP={_widget_csp()} "
+        f"ui.csp={_widget_ui_csp()}"
     )
     contents = [
         types.TextResourceContents(
