@@ -24,7 +24,6 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 _CODE_TTL_SECONDS = 300
-_TOKEN_TTL_SECONDS = 30 * 24 * 3600
 _CIMD_TTL_SECONDS = 600
 _MAX_FAILURES = 8
 _FAILURE_WINDOW_SECONDS = 300
@@ -86,7 +85,7 @@ def _b64_decode(value: str) -> bytes:
 
 def issue_access_token() -> str:
     payload = json.dumps(
-        {"exp": int(time.time()) + _TOKEN_TTL_SECONDS, "aud": _resource()},
+        {"aud": _resource()},
         separators=(",", ":"),
     ).encode("utf-8")
     body = _b64(payload)
@@ -118,8 +117,7 @@ def access_token_valid(token: str) -> bool:
         return False
     if payload.get("aud") != _resource():
         return False
-    exp = payload.get("exp")
-    return isinstance(exp, int) and exp > int(time.time())
+    return True
 
 
 def _pkce_s256(verifier: str) -> str:
@@ -390,7 +388,6 @@ def register_oauth_routes(mcp: Any) -> None:
             {
                 "access_token": access_token,
                 "token_type": "Bearer",
-                "expires_in": _TOKEN_TTL_SECONDS,
                 "scope": "sinde",
             },
             headers={"Cache-Control": "no-store"},
