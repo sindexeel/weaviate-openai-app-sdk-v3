@@ -54,6 +54,28 @@ _BASE_URL = (
 _BASE_HOST = urlparse(_BASE_URL).netloc
 
 
+def _public_origin() -> str:
+    """Origin esatto (schema + host) per URL degli asset e CSP del widget."""
+    parsed = urlparse(_BASE_URL)
+    if parsed.scheme and parsed.netloc:
+        return f"{parsed.scheme}://{parsed.netloc}"
+    return _BASE_URL.rstrip("/")
+
+
+def _widget_csp() -> Dict[str, List[str]]:
+    """Allowlist CSP legacy Apps SDK (skybridge).
+
+    resource_domains: script, CSS e immagini.
+    connect_domains: fetch del widget verso le API dello stesso host.
+    Nessun wildcard: ChatGPT rifiuta le origini con asterisco.
+    """
+    origin = _public_origin()
+    return {
+        "connect_domains": [origin],
+        "resource_domains": [origin],
+    }
+
+
 def _looks_like_pdf(file_bytes: bytes, filename: Optional[str] = None) -> bool:
     if filename and filename.lower().endswith(".pdf"):
         return True
@@ -536,6 +558,28 @@ def _load_widget_html() -> str:
             html_content
         )
 
+        # Resta visibile solo se il bundle non viene eseguito (CSP o 404).
+        boot_markup = (
+            '<div id="root">'
+            '<p data-sinde-boot="1">'
+            "Caricamento del widget Sinde. Se questo testo resta visibile, "
+            "il JavaScript non è stato eseguito."
+            "</p>"
+            "</div>"
+        )
+        if '<div id="root"></div>' in html_content:
+            html_content = html_content.replace('<div id="root"></div>', boot_markup, 1)
+        else:
+            print("[widget] markup #root non trovato: messaggio di boot non inserito")
+
+        asset_urls = re.findall(r'(?:src|href)="([^"]+)"', html_content)
+        print(
+            "[widget] html pronto "
+            f"resource_domains={_widget_csp()['resource_domains']} "
+            f"connect_domains={_widget_csp()['connect_domains']} "
+            f"assets={asset_urls}"
+        )
+
         return html_content
     except Exception as e:
         print(f"[widget] Error loading widget HTML: {e}")
@@ -596,6 +640,17 @@ def _tool_meta(widget: SindeWidget) -> Dict[str, Any]:
     }
 
 
+def _resource_meta(widget: SindeWidget) -> Dict[str, Any]:
+    """Metadati della risorsa UI che ChatGPT legge davvero.
+
+    resources/list e resources/read sono gli handler di basso livello.
+    Il decoratore @mcp.resource non è quel percorso.
+    """
+    meta = _tool_meta(widget)
+    meta["openai/widgetCSP"] = _widget_csp()
+    return meta
+
+
 def _resource_description(widget: SindeWidget) -> str:
     return f"{widget.title} widget markup"
 
@@ -613,14 +668,7 @@ def image_search_widget_resource():
                 "uri": widget_uri,
                 "mimeType": "text/html+skybridge",
                 "text": widget_html,
-                "_meta": {
-                    "openai/widgetPrefersBorder": True,
-                    "openai/widgetDomain": "https://chatgpt.com",
-                    "openai/widgetCSP": {
-                        "connect_domains": [_BASE_URL],
-                        "resource_domains": ["https://*.oaistatic.com"],
-                    },
-                },
+                "_meta": _resource_meta(SINDE_WIDGET),
             }
         ],
     }
@@ -748,6 +796,7 @@ async def serve_assets(request):
         return JSONResponse({"error": "Invalid path"}, status_code=400)
 
     if not full_path.exists() or not full_path.is_file():
+        print(f"[widget] asset mancante: {request.url.path}")
         return JSONResponse({"error": "Not found"}, status_code=404)
 
     content_type_map = {
@@ -2631,7 +2680,7 @@ async def _list_resources() -> List[types.Resource]:
             uri=w.template_uri,
             description=_resource_description(w),
             mimeType=MIME_TYPE,
-            _meta=_tool_meta(w),
+            _meta=_resource_meta(w),
         )
     ]
 
@@ -2646,7 +2695,7 @@ async def _list_resource_templates() -> List[types.ResourceTemplate]:
             uriTemplate=w.template_uri,
             description=_resource_description(w),
             mimeType=MIME_TYPE,
-            _meta=_tool_meta(w),
+            _meta=_resource_meta(w),
         )
     ]
 
@@ -2661,12 +2710,17 @@ async def _handle_read_resource(req: types.ReadResourceRequest) -> types.ServerR
             )
         )
 
+    print(
+        "[widget] resources/read "
+        f"uri={w.template_uri} "
+        f"csp={_widget_csp()}"
+    )
     contents = [
         types.TextResourceContents(
             uri=w.template_uri,
             mimeType=MIME_TYPE,
             text=w.html,
-            _meta=_tool_meta(w),
+            _meta=_resource_meta(w),
         )
     ]
 
