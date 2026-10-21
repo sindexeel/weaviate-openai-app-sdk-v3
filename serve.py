@@ -510,6 +510,101 @@ def _apply_mcp_metadata():
 _apply_mcp_metadata()
 
 
+def _dist_file_for_asset_url(url: str) -> Optional[Path]:
+    """Risolve un href/src di Vite sul file in dist, anche con /assets/assets/."""
+    path = url.split("?", 1)[0].split("#", 1)[0]
+    base = _public_origin()
+    if path.startswith(base):
+        path = path[len(base):]
+    if not path.startswith("/"):
+        path = "/" + path
+    rel = path[len("/assets/"):] if path.startswith("/assets/") else path.lstrip("/")
+    if rel.startswith("assets/"):
+        rel = rel[len("assets/"):]
+    candidate = (_WIDGET_DIST_DIR / "assets" / rel).resolve()
+    fallback = (_WIDGET_DIST_DIR / rel).resolve()
+    dist_root = _WIDGET_DIST_DIR.resolve()
+    for found in (candidate, fallback):
+        try:
+            found.relative_to(dist_root)
+        except ValueError:
+            continue
+        if found.is_file():
+            return found
+    return None
+
+
+def _escape_inline(text: str) -> str:
+    return text.replace("</", "<\\/")
+
+
+def _inline_widget_assets(html: str) -> str:
+    """Incorpora CSS e JS nell'HTML.
+
+    ChatGPT non aggiunge l'origine Render a script-src, style-src e img-src,
+    ma la policy predefinita consente script e style inline.
+    """
+    styles: List[str] = []
+    scripts: List[str] = []
+
+    def replace_style(match: re.Match) -> str:
+        path = _dist_file_for_asset_url(match.group(1))
+        if path is None:
+            print(f"[widget] css non trovato, lascio il link: {match.group(1)}")
+            return match.group(0)
+        styles.append(path.read_text(encoding="utf-8"))
+        print(f"[widget] css inline {path.name} ({path.stat().st_size} byte)")
+        return ""
+
+    def replace_script(match: re.Match) -> str:
+        path = _dist_file_for_asset_url(match.group(1))
+        if path is None:
+            print(f"[widget] js non trovato, lascio lo script: {match.group(1)}")
+            return match.group(0)
+        scripts.append(path.read_text(encoding="utf-8"))
+        print(f"[widget] js inline {path.name} ({path.stat().st_size} byte)")
+        return ""
+
+    html = re.sub(
+        r'<link\b[^>]*\bhref="([^"]+\.css)"[^>]*>',
+        replace_style,
+        html,
+        flags=re.IGNORECASE,
+    )
+    html = re.sub(
+        r'<link\b[^>]*\brel="icon"[^>]*>',
+        "",
+        html,
+        flags=re.IGNORECASE,
+    )
+    html = re.sub(
+        r'<script\b[^>]*\bsrc="([^"]+)"[^>]*>\s*</script>',
+        replace_script,
+        html,
+        flags=re.IGNORECASE,
+    )
+
+    if styles:
+        style_tag = "<style>" + _escape_inline("\n".join(styles)) + "</style>"
+        if "</head>" in html:
+            html = html.replace("</head>", style_tag + "</head>", 1)
+        else:
+            html = style_tag + html
+
+    if scripts:
+        origin = json.dumps(_public_origin())
+        inline_js = (
+            f'<script>window.__SINDE_BASE_URL__={origin};</script>'
+            "<script>" + _escape_inline("\n".join(scripts)) + "</script>"
+        )
+        if "</body>" in html:
+            html = html.replace("</body>", inline_js + "</body>", 1)
+        else:
+            html += inline_js
+
+    return html
+
+
 def _load_widget_html() -> str:
     widget_html_path = _WIDGET_DIST_DIR / "index.html"
 
@@ -523,50 +618,14 @@ def _load_widget_html() -> str:
 </head>
 <body>
   <div id="root"></div>
-  <script type="module" src="{_BASE_URL}/assets/index.js"></script>
+  <script>window.__SINDE_BASE_URL__={json.dumps(_public_origin())};</script>
 </body>
 </html>"""
 
     try:
-        with open(widget_html_path, "r", encoding="utf-8") as f:
-            html_content = f.read()
+        html_content = widget_html_path.read_text(encoding="utf-8")
+        html_content = _inline_widget_assets(html_content)
 
-        # Vite genera path come /assets/index-xxx.js (con base: '/assets/')
-        # Dobbiamo sostituire /assets/ con {_BASE_URL}/assets/ senza creare doppio assets
-        import re
-        
-        # Prima rimuovi eventuali doppi assets (correzione per path già modificati)
-        base_url_escaped = _BASE_URL.replace('/', r'\/')
-        html_content = re.sub(
-            rf'{base_url_escaped}/assets/assets/',
-            rf'{_BASE_URL}/assets/',
-            html_content
-        )
-        
-        # Sostituisce src="/assets/..." con src="{_BASE_URL}/assets/..."
-        html_content = re.sub(
-            r'src="/assets/([^"]+)"',
-            rf'src="{_BASE_URL}/assets/\1"',
-            html_content
-        )
-        html_content = re.sub(
-            r'href="/assets/([^"]+)"',
-            rf'href="{_BASE_URL}/assets/\1"',
-            html_content
-        )
-        # Gestisce anche path relativi assets/... (senza slash iniziale)
-        html_content = re.sub(
-            r'src="assets/([^"]+)"',
-            rf'src="{_BASE_URL}/assets/\1"',
-            html_content
-        )
-        html_content = re.sub(
-            r'href="assets/([^"]+)"',
-            rf'href="{_BASE_URL}/assets/\1"',
-            html_content
-        )
-
-        # Resta visibile solo se il bundle non viene eseguito (CSP o 404).
         boot_markup = (
             '<div id="root">'
             '<p data-sinde-boot="1">'
@@ -580,14 +639,17 @@ def _load_widget_html() -> str:
         else:
             print("[widget] markup #root non trovato: messaggio di boot non inserito")
 
-        asset_urls = re.findall(r'(?:src|href)="([^"]+)"', html_content)
+        external_assets = re.findall(
+            r'<(?:script|link)\b[^>]*\b(?:src|href)="([^"]+)"',
+            html_content,
+            flags=re.IGNORECASE,
+        )
         print(
             "[widget] html pronto "
-            f"resource_domains={_widget_csp()['resource_domains']} "
-            f"connect_domains={_widget_csp()['connect_domains']} "
-            f"assets={asset_urls}"
+            f"bytes={len(html_content)} "
+            f"external={external_assets} "
+            f"ui.csp={_widget_ui_csp()}"
         )
-
         return html_content
     except Exception as e:
         print(f"[widget] Error loading widget HTML: {e}")
@@ -600,7 +662,6 @@ def _load_widget_html() -> str:
 </head>
 <body>
   <div id="root"></div>
-  <script type="module" src="{_BASE_URL}/assets/index.js"></script>
 </body>
 </html>"""
 

@@ -7,9 +7,13 @@ export default defineConfig({
   base: '/assets/',  // Base path per gli asset
   build: {
     outDir: 'dist',
-    assetsDir: 'assets',  // Metti gli asset in una sottocartella
+    assetsDir: 'assets',
+    cssCodeSplit: false,
+    modulePreload: false,
     rollupOptions: {
       output: {
+        format: 'iife',
+        inlineDynamicImports: true,
         entryFileNames: 'assets/index-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: 'assets/[name]-[hash].[ext]'

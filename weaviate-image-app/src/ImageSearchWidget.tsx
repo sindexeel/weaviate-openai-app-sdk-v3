@@ -1,14 +1,14 @@
 // src/ImageSearchWidget.tsx
 import React, { useState, useEffect } from "react";
 
-// Usa l'origine dell'asset JS servito dal backend corrente.
-// In questo modo il widget chiama sempre lo stesso host da cui e' stato caricato.
+// Origine iniettata dal server nell'HTML. Il bundle è inline: import.meta.url
+// punterebbe all'iframe di ChatGPT, non al server Render.
 const MCP_BASE_URL = (() => {
-  try {
-    return new URL(import.meta.url).origin;
-  } catch {
-    return "https://weaviate-openai-app-sdk-v3.onrender.com";
+  const injected = (window as Window & { __SINDE_BASE_URL__?: string }).__SINDE_BASE_URL__;
+  if (typeof injected === "string" && injected.startsWith("https://")) {
+    return injected.replace(/\/$/, "");
   }
+  return "https://weaviate-openai-app-sdk-v3.onrender.com";
 })();
 
 // Imposta a `true` per mostrare uuid, distance raw e bm25_score su ogni card
