@@ -17,3 +17,5 @@ services:
         value: /mcp/
       - key: BASE_URL
         value: https://weaviate-openai-app-sdk-v3.onrender.com
+      - key: MCP_API_KEY
+        sync: false

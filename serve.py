@@ -16,6 +16,7 @@ import mcp.types as types
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from starlette.responses import JSONResponse
+import mcp_auth
 
 # --- Weaviate client imports (v4) ---
 import weaviate
@@ -2957,6 +2958,8 @@ async def _call_tool_request(req: types.CallToolRequest) -> types.ServerResult:
 mcp._mcp_server.request_handlers[types.CallToolRequest] = _call_tool_request
 mcp._mcp_server.request_handlers[types.ReadResourceRequest] = _handle_read_resource
 
+mcp_auth.register_oauth_routes(mcp)
+
 
 # ==== Esponi l'app ASGI per uvicorn (per uso diretto nello start command) ====
 # Puoi usare: uvicorn serve:app --host 0.0.0.0 --port $PORT
@@ -2992,6 +2995,8 @@ try:
     )
 except Exception:
     pass
+
+mcp_auth.install(app)
 
 # ==== main: avvia il server con uvicorn (come nell'esempio Pizzaz) ==================
 if __name__ == "__main__":
