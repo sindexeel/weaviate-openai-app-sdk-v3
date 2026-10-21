@@ -682,7 +682,8 @@ def _load_widget_html_cached() -> str:
     return _load_widget_html()
 
 
-widget_uri = "ui://widget/image-search.html"
+# L'URI è la chiave di cache di ChatGPT. Va cambiato quando cambia l'HTML.
+widget_uri = "ui://widget/image-search-v2.html"
 
 
 SINDE_WIDGET = SindeWidget(
@@ -696,7 +697,7 @@ SINDE_WIDGET = SindeWidget(
 )
 
 
-MIME_TYPE = "text/html+skybridge"
+MIME_TYPE = "text/html;profile=mcp-app"
 
 
 def _tool_meta(widget: SindeWidget) -> Dict[str, Any]:
@@ -706,6 +707,7 @@ def _tool_meta(widget: SindeWidget) -> Dict[str, Any]:
         "openai/toolInvocation/invoked": widget.invoked,
         "openai/widgetAccessible": True,
         "openai/resultCanProduceWidget": True,
+        "ui": {"resourceUri": widget.template_uri},
     }
 
 
@@ -717,7 +719,9 @@ def _resource_meta(widget: SindeWidget) -> Dict[str, Any]:
     """
     meta = _tool_meta(widget)
     meta["openai/widgetCSP"] = _widget_csp()
-    meta["ui"] = {"csp": _widget_ui_csp()}
+    ui = dict(meta.get("ui") or {})
+    ui["csp"] = _widget_ui_csp()
+    meta["ui"] = ui
     return meta
 
 
@@ -736,7 +740,7 @@ def image_search_widget_resource():
         "contents": [
             {
                 "uri": widget_uri,
-                "mimeType": "text/html+skybridge",
+                "mimeType": MIME_TYPE,
                 "text": widget_html,
                 "_meta": _resource_meta(SINDE_WIDGET),
             }
