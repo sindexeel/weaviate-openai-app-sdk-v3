@@ -1,0 +1,495 @@
+{
+  "cases": [
+    {
+      "input": "702.0019.00.0",
+      "self_rank_search": 2,
+      "query_class": "pignone_ingranaggio/tornito/3-5/bilanciato",
+      "class_size": 56,
+      "expected_in_pool": [],
+      "expected_in_class": [],
+      "variants": {
+        "ricerca_attuale": {
+          "expected_ranks": {
+            "702.0144.00": null
+          },
+          "unwanted_ranks": {
+            "SM02013561A": null,
+            "PF00011631-B": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "A_pool+giudice": {
+          "expected_ranks": {
+            "702.0144.00": null
+          },
+          "unwanted_ranks": {
+            "SM02013561A": null,
+            "PF00011631-B": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "B_classe+giudice": {
+          "expected_ranks": {
+            "702.0144.00": null
+          },
+          "unwanted_ranks": {
+            "SM02013561A": null,
+            "PF00011631-B": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "C_unione+giudice": {
+          "expected_ranks": {
+            "702.0144.00": null
+          },
+          "unwanted_ranks": {
+            "SM02013561A": null,
+            "PF00011631-B": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        }
+      }
+    },
+    {
+      "input": "PF00009371",
+      "self_rank_search": 1,
+      "query_class": "pignone_ingranaggio/tornito/oltre_5/allungato",
+      "class_size": 55,
+      "expected_in_pool": [
+        "PF00018845",
+        "PF00005877-A",
+        "PF00015175"
+      ],
+      "expected_in_class": [
+        "PF00018845",
+        "PF00005877-A",
+        "PF00015175"
+      ],
+      "variants": {
+        "ricerca_attuale": {
+          "expected_ranks": {
+            "PF00018845": 3,
+            "PF00005877-A": 4,
+            "PF00015175": 10
+          },
+          "unwanted_ranks": {},
+          "recall@5": 0.6666666666666666,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.3333333333333333,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "A_pool+giudice": {
+          "expected_ranks": {
+            "PF00018845": 2,
+            "PF00005877-A": 6,
+            "PF00015175": 4
+          },
+          "unwanted_ranks": {},
+          "recall@5": 0.6666666666666666,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.5,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "B_classe+giudice": {
+          "expected_ranks": {
+            "PF00018845": 2,
+            "PF00005877-A": 5,
+            "PF00015175": 4
+          },
+          "unwanted_ranks": {},
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.5,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "C_unione+giudice": {
+          "expected_ranks": {
+            "PF00018845": 2,
+            "PF00005877-A": 6,
+            "PF00015175": 4
+          },
+          "unwanted_ranks": {},
+          "recall@5": 0.6666666666666666,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.5,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        }
+      }
+    },
+    {
+      "input": "PF00018620",
+      "self_rank_search": 1,
+      "query_class": "blocchetto/prismatico/3-5/bilanciato",
+      "class_size": 361,
+      "expected_in_pool": [],
+      "expected_in_class": [
+        "704.0256.00.0"
+      ],
+      "variants": {
+        "ricerca_attuale": {
+          "expected_ranks": {
+            "704.0256.00.0": null
+          },
+          "unwanted_ranks": {
+            "702.0124.00.0": null,
+            "702.0144.00.0": null,
+            "701.1829.00.0": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "A_pool+giudice": {
+          "expected_ranks": {
+            "704.0256.00.0": null
+          },
+          "unwanted_ranks": {
+            "702.0124.00.0": null,
+            "702.0144.00.0": null,
+            "701.1829.00.0": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "B_classe+giudice": {
+          "expected_ranks": {
+            "704.0256.00.0": 4
+          },
+          "unwanted_ranks": {
+            "702.0124.00.0": null,
+            "702.0144.00.0": null,
+            "701.1829.00.0": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.25,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "C_unione+giudice": {
+          "expected_ranks": {
+            "704.0256.00.0": 4
+          },
+          "unwanted_ranks": {
+            "702.0124.00.0": null,
+            "702.0144.00.0": null,
+            "701.1829.00.0": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.25,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        }
+      }
+    },
+    {
+      "input": "701.2425.00.0",
+      "self_rank_search": 1,
+      "query_class": "staffa_supporto/lamiera/3-5/bilanciato",
+      "class_size": 219,
+      "expected_in_pool": [
+        "701.2332.00.0"
+      ],
+      "expected_in_class": [
+        "701.2320.00.0",
+        "701.2332.00.0"
+      ],
+      "variants": {
+        "ricerca_attuale": {
+          "expected_ranks": {
+            "701.2320.00.0": null,
+            "701.2332.00.0": 48
+          },
+          "unwanted_ranks": {
+            "PF00004573": null,
+            "PF00017257": null,
+            "701.2146.00.0": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.020833333333333332,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "A_pool+giudice": {
+          "expected_ranks": {
+            "701.2320.00.0": null,
+            "701.2332.00.0": 4
+          },
+          "unwanted_ranks": {
+            "PF00004573": null,
+            "PF00017257": null,
+            "701.2146.00.0": null
+          },
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@20": 0.5,
+          "mrr": 0.25,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "B_classe+giudice": {
+          "expected_ranks": {
+            "701.2320.00.0": 3,
+            "701.2332.00.0": 5
+          },
+          "unwanted_ranks": {
+            "PF00004573": null,
+            "PF00017257": null,
+            "701.2146.00.0": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.3333333333333333,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "C_unione+giudice": {
+          "expected_ranks": {
+            "701.2320.00.0": 4,
+            "701.2332.00.0": 5
+          },
+          "unwanted_ranks": {
+            "PF00004573": null,
+            "PF00017257": null,
+            "701.2146.00.0": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.25,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        }
+      }
+    },
+    {
+      "input": "PF00016814",
+      "self_rank_search": 1,
+      "query_class": "staffa_supporto/misto/oltre_5/bilanciato",
+      "class_size": 219,
+      "expected_in_pool": [
+        "PF00013561",
+        "PF00017176-A"
+      ],
+      "expected_in_class": [],
+      "variants": {
+        "ricerca_attuale": {
+          "expected_ranks": {
+            "PF00013561": 5,
+            "PF00017176-A": 16
+          },
+          "unwanted_ranks": {
+            "PF00001092-E": null
+          },
+          "recall@5": 0.5,
+          "recall@10": 0.5,
+          "recall@20": 1.0,
+          "mrr": 0.2,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "A_pool+giudice": {
+          "expected_ranks": {
+            "PF00013561": 10,
+            "PF00017176-A": 11
+          },
+          "unwanted_ranks": {
+            "PF00001092-E": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.5,
+          "recall@20": 1.0,
+          "mrr": 0.1,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "B_classe+giudice": {
+          "expected_ranks": {
+            "PF00013561": null,
+            "PF00017176-A": null
+          },
+          "unwanted_ranks": {
+            "PF00001092-E": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "C_unione+giudice": {
+          "expected_ranks": {
+            "PF00013561": 23,
+            "PF00017176-A": 26
+          },
+          "unwanted_ranks": {
+            "PF00001092-E": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.043478260869565216,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        }
+      }
+    },
+    {
+      "input": "701.1828.00.0",
+      "self_rank_search": 1,
+      "query_class": "flangia_disco/tornito/oltre_5/bilanciato",
+      "class_size": 419,
+      "expected_in_pool": [
+        "701.1829.00.0",
+        "701.1831.00.0"
+      ],
+      "expected_in_class": [],
+      "variants": {
+        "ricerca_attuale": {
+          "expected_ranks": {
+            "701.1829.00.0": 4,
+            "701.1831.00.0": 9
+          },
+          "unwanted_ranks": {
+            "701.2146.00.0": null,
+            "702.0144.00.0": null,
+            "PF00002831-A": null,
+            "PF00002392": null
+          },
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.25,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "A_pool+giudice": {
+          "expected_ranks": {
+            "701.1829.00.0": 1,
+            "701.1831.00.0": 2
+          },
+          "unwanted_ranks": {
+            "701.2146.00.0": null,
+            "702.0144.00.0": null,
+            "PF00002831-A": null,
+            "PF00002392": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 1.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "B_classe+giudice": {
+          "expected_ranks": {
+            "701.1829.00.0": null,
+            "701.1831.00.0": null
+          },
+          "unwanted_ranks": {
+            "701.2146.00.0": null,
+            "702.0144.00.0": null,
+            "PF00002831-A": null,
+            "PF00002392": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "C_unione+giudice": {
+          "expected_ranks": {
+            "701.1829.00.0": 1,
+            "701.1831.00.0": 2
+          },
+          "unwanted_ranks": {
+            "701.2146.00.0": null,
+            "702.0144.00.0": null,
+            "PF00002831-A": null,
+            "PF00002392": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 1.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        }
+      }
+    }
+  ],
+  "summary": {
+    "ricerca_attuale": {
+      "recall@5": 0.278,
+      "recall@10": 0.417,
+      "recall@20": 0.5,
+      "mrr": 0.134,
+      "unwanted@10": 0
+    },
+    "A_pool+giudice": {
+      "recall@5": 0.361,
+      "recall@10": 0.5,
+      "recall@20": 0.583,
+      "mrr": 0.308,
+      "unwanted@10": 0
+    },
+    "B_classe+giudice": {
+      "recall@5": 0.5,
+      "recall@10": 0.5,
+      "recall@20": 0.5,
+      "mrr": 0.181,
+      "unwanted@10": 0
+    },
+    "C_unione+giudice": {
+      "recall@5": 0.611,
+      "recall@10": 0.667,
+      "recall@20": 0.667,
+      "mrr": 0.341,
+      "unwanted@10": 0
+    }
+  }
+}
