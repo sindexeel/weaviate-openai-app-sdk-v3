@@ -2131,6 +2131,8 @@ _FUSION_ENABLED = os.environ.get("FUSION_ENABLED", "1").lower() in ("1", "true",
 _FUSION_NORM = os.environ.get("FUSION_NORM", "minmax").strip().lower()
 _FUSION_SELF_THRESHOLD = float(os.environ.get("FUSION_SELF_THRESHOLD", "0.995"))
 _FUSION_RRF_K = int(os.environ.get("FUSION_RRF_K", "60"))
+# Match quasi identici DINOv2 (>= FUSION_SELF_THRESHOLD) sempre in testa ai risultati.
+_FUSION_PIN_SELF = os.environ.get("FUSION_PIN_SELF", "1").lower() in ("1", "true", "yes")
 # Proprietà richieste sul pool caption: niente image_b64 (limite gRPC 100 MB).
 _FUSION_POOL_PROPS = ["source_pdf", "caption"]
 
@@ -2380,6 +2382,17 @@ def _do_fusion_search(client, image_b64, limit=20):
         })
 
     fused.sort(key=lambda x: x["fusion_score"], reverse=True)
+
+    # Il disegno identico (già in archivio) va sempre in testa: con rrf o
+    # minmax_noself può scivolare in basso perché non pesa più dello stesso.
+    if _FUSION_PIN_SELF:
+        dino_raw = {r["source_pdf"]: r.get("score") or 0 for r in res_dino}
+        pinned = [r for r in fused if dino_raw.get(r["source_pdf"], 0) >= _FUSION_SELF_THRESHOLD]
+        if pinned:
+            pinned.sort(key=lambda r: dino_raw[r["source_pdf"]], reverse=True)
+            pinned_ids = {r["source_pdf"] for r in pinned}
+            fused = pinned + [r for r in fused if r["source_pdf"] not in pinned_ids]
+
     fused = fused[:limit]
 
     print(f"[fusion] norm={norm}, w_dino={w_dino}, w_cap={w_cap}, pool={pool}, "
