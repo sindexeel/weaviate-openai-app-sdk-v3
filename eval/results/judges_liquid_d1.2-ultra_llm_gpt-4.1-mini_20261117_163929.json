@@ -1,0 +1,905 @@
+{
+  "baseline": {
+    "summary": {
+      "recall@5": 0.083,
+      "recall@10": 0.083,
+      "recall@20": 0.5,
+      "mrr": 0.1,
+      "unwanted@5_total": 1,
+      "unwanted@10_total": 1
+    },
+    "cases": [
+      {
+        "expected_ranks": {
+          "702.0144.00": 16
+        },
+        "unwanted_ranks": {
+          "SM02013561A": null,
+          "PF00011631-B": null
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 1.0,
+        "mrr": 0.0625,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "702.0019.00.0"
+      },
+      {
+        "expected_ranks": {
+          "PF00018845": 19,
+          "PF00005877-A": 12,
+          "PF00015175": 16
+        },
+        "unwanted_ranks": {},
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 1.0,
+        "mrr": 0.08333333333333333,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00009371"
+      },
+      {
+        "expected_ranks": {
+          "704.0256.00.0": 28
+        },
+        "unwanted_ranks": {
+          "702.0124.00.0": null,
+          "702.0144.00.0": null,
+          "701.1829.00.0": null
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.03571428571428571,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00018620"
+      },
+      {
+        "expected_ranks": {
+          "701.2320.00.0": 19,
+          "701.2332.00.0": null
+        },
+        "unwanted_ranks": {
+          "PF00004573": null,
+          "PF00017257": null,
+          "701.2146.00.0": null
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.5,
+        "mrr": 0.05263157894736842,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "701.2425.00.0"
+      },
+      {
+        "expected_ranks": {
+          "PF00013561": 31,
+          "PF00017176-A": 45
+        },
+        "unwanted_ranks": {
+          "PF00001092-E": null
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.03225806451612903,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00016814"
+      },
+      {
+        "expected_ranks": {
+          "701.1829.00.0": 3,
+          "701.1831.00.0": 36
+        },
+        "unwanted_ranks": {
+          "701.2146.00.0": 1,
+          "702.0144.00.0": null,
+          "PF00002831-A": null,
+          "PF00002392": null
+        },
+        "recall@5": 0.5,
+        "recall@10": 0.5,
+        "recall@20": 0.5,
+        "mrr": 0.3333333333333333,
+        "unwanted@5": 1,
+        "unwanted@10": 1,
+        "input": "701.1828.00.0"
+      }
+    ]
+  },
+  "liquid_d1.2-ultra": {
+    "summary": {
+      "recall@5": 0.694,
+      "recall@10": 0.833,
+      "recall@20": 0.917,
+      "mrr": 0.552,
+      "unwanted@5_total": 0,
+      "unwanted@10_total": 0,
+      "t0.3_shown_avg": 18.7,
+      "t0.3_expected_shown": 9,
+      "t0.3_unwanted_shown": 1,
+      "t0.5_shown_avg": 8.5,
+      "t0.5_expected_shown": 8,
+      "t0.5_unwanted_shown": 1,
+      "t0.7_shown_avg": 3.7,
+      "t0.7_expected_shown": 7,
+      "t0.7_unwanted_shown": 0,
+      "p_expected_mean": 0.704,
+      "p_unwanted_mean": 0.558,
+      "p_others_mean": 0.275
+    },
+    "cases": [
+      {
+        "expected_ranks": {
+          "702.0144.00": 1
+        },
+        "unwanted_ranks": {
+          "SM02013561A": null,
+          "PF00011631-B": null
+        },
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "702.0019.00.0",
+        "thresholds": {
+          "0.3": {
+            "shown": 10,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.5": {
+            "shown": 2,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 1,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.901
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.206,
+        "top5": [
+          [
+            "702.0144.00.0.pdf",
+            0.901
+          ],
+          [
+            "INNES00003.PDF",
+            0.637
+          ],
+          [
+            "BOCCO00013.PDF",
+            0.407
+          ],
+          [
+            "701.1829.00.0",
+            0.407
+          ],
+          [
+            "93513113A",
+            0.396
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "PF00018845": 4,
+          "PF00005877-A": 3,
+          "PF00015175": 7
+        },
+        "unwanted_ranks": {},
+        "recall@5": 0.6666666666666666,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 0.3333333333333333,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00009371",
+        "thresholds": {
+          "0.3": {
+            "shown": 30,
+            "expected_shown": 3,
+            "unwanted_shown": 0
+          },
+          "0.5": {
+            "shown": 14,
+            "expected_shown": 3,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 7,
+            "expected_shown": 3,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.804,
+          0.796,
+          0.719
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.361,
+        "top5": [
+          [
+            "PF00001923-A.PDF",
+            0.897
+          ],
+          [
+            "PF00005832.pdf",
+            0.825
+          ],
+          [
+            "PF00005877-A.pdf",
+            0.804
+          ],
+          [
+            "PF00018845.pdf",
+            0.796
+          ],
+          [
+            "PF00008665-B Pignone per Motore.pdf",
+            0.78
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "704.0256.00.0": 2
+        },
+        "unwanted_ranks": {
+          "702.0124.00.0": null,
+          "702.0144.00.0": null,
+          "701.1829.00.0": null
+        },
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 0.5,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00018620",
+        "thresholds": {
+          "0.3": {
+            "shown": 17,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.5": {
+            "shown": 10,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 6,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.832
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.291,
+        "top5": [
+          [
+            "SUPCH00022.PDF",
+            0.868
+          ],
+          [
+            "704.0256.00.0.pdf",
+            0.832
+          ],
+          [
+            "00018-09-004-01.PDF",
+            0.832
+          ],
+          [
+            "00004-09-101-00.PDF",
+            0.804
+          ],
+          [
+            "00001-09-201-01.PDF",
+            0.755
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "701.2320.00.0": 3,
+          "701.2332.00.0": null
+        },
+        "unwanted_ranks": {
+          "PF00004573": null,
+          "PF00017257": null,
+          "701.2146.00.0": null
+        },
+        "recall@5": 0.5,
+        "recall@10": 0.5,
+        "recall@20": 0.5,
+        "mrr": 0.3333333333333333,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "701.2425.00.0",
+        "thresholds": {
+          "0.3": {
+            "shown": 22,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.5": {
+            "shown": 7,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 2,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.637
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.284,
+        "top5": [
+          [
+            "701.2366.00.0.pdf",
+            0.832
+          ],
+          [
+            "MIN211034110A.pdf",
+            0.764
+          ],
+          [
+            "701.2320.00.0.pdf",
+            0.637
+          ],
+          [
+            "2450628-Rev.5.pdf",
+            0.57
+          ],
+          [
+            "899010900 SEAT STRIKER.pdf",
+            0.57
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "PF00013561": 7,
+          "PF00017176-A": 17
+        },
+        "unwanted_ranks": {
+          "PF00001092-E": null
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.5,
+        "recall@20": 1.0,
+        "mrr": 0.14285714285714285,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00016814",
+        "thresholds": {
+          "0.3": {
+            "shown": 14,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.5": {
+            "shown": 4,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.374,
+          0.253
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.215,
+        "top5": [
+          [
+            "PF00002197.pdf",
+            0.669
+          ],
+          [
+            "PF00013651",
+            0.626
+          ],
+          [
+            "SUPPO00016.PDF",
+            0.547
+          ],
+          [
+            "CM-00819-820-19747.pdf",
+            0.523
+          ],
+          [
+            "PF00013595-C con note.pdf",
+            0.477
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "701.1829.00.0": 1,
+          "701.1831.00.0": 4
+        },
+        "unwanted_ranks": {
+          "701.2146.00.0": 14,
+          "702.0144.00.0": null,
+          "PF00002831-A": null,
+          "PF00002392": null
+        },
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "701.1828.00.0",
+        "thresholds": {
+          "0.3": {
+            "shown": 19,
+            "expected_shown": 2,
+            "unwanted_shown": 1
+          },
+          "0.5": {
+            "shown": 14,
+            "expected_shown": 2,
+            "unwanted_shown": 1
+          },
+          "0.7": {
+            "shown": 6,
+            "expected_shown": 2,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.927,
+          0.796
+        ],
+        "p_unwanted": [
+          0.558
+        ],
+        "p_others_mean": 0.293,
+        "top5": [
+          [
+            "701.1829.00.0",
+            0.927
+          ],
+          [
+            "701.1830.00.0.pdf",
+            0.917
+          ],
+          [
+            "705.0013.00.0.pdf",
+            0.811
+          ],
+          [
+            "701.1831.00.0",
+            0.796
+          ],
+          [
+            "701.1871.00.1",
+            0.764
+          ]
+        ]
+      }
+    ]
+  },
+  "llm_gpt-4.1-mini": {
+    "summary": {
+      "recall@5": 0.806,
+      "recall@10": 0.917,
+      "recall@20": 0.917,
+      "mrr": 0.756,
+      "unwanted@5_total": 0,
+      "unwanted@10_total": 0,
+      "t0.3_shown_avg": 4.3,
+      "t0.3_expected_shown": 10,
+      "t0.3_unwanted_shown": 0,
+      "t0.5_shown_avg": 1.8,
+      "t0.5_expected_shown": 5,
+      "t0.5_unwanted_shown": 0,
+      "t0.7_shown_avg": 1.3,
+      "t0.7_expected_shown": 3,
+      "t0.7_unwanted_shown": 0,
+      "p_expected_mean": 0.49,
+      "p_unwanted_mean": 0.0,
+      "p_others_mean": 0.113
+    },
+    "cases": [
+      {
+        "expected_ranks": {
+          "702.0144.00": 1
+        },
+        "unwanted_ranks": {
+          "SM02013561A": null,
+          "PF00011631-B": null
+        },
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "702.0019.00.0",
+        "thresholds": {
+          "0.3": {
+            "shown": 4,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.5": {
+            "shown": 1,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 1,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.75
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.12,
+        "top5": [
+          [
+            "702.0144.00.0.pdf",
+            0.75
+          ],
+          [
+            "INNES00003.PDF",
+            0.3
+          ],
+          [
+            "BUSSO00018.PDF",
+            0.3
+          ],
+          [
+            "BOCCO00013.PDF",
+            0.3
+          ],
+          [
+            "CANOT00031.PDF",
+            0.2
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "PF00018845": 9,
+          "PF00005877-A": 5,
+          "PF00015175": 7
+        },
+        "unwanted_ranks": {},
+        "recall@5": 0.3333333333333333,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 0.2,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00009371",
+        "thresholds": {
+          "0.3": {
+            "shown": 9,
+            "expected_shown": 3,
+            "unwanted_shown": 0
+          },
+          "0.5": {
+            "shown": 7,
+            "expected_shown": 2,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 5,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.7,
+          0.5,
+          0.3
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.209,
+        "top5": [
+          [
+            "PF00005832.pdf",
+            0.75
+          ],
+          [
+            "PF00015676-A Pignone M6 Z=17.pdf",
+            0.75
+          ],
+          [
+            "PF00009173-A.pdf",
+            0.75
+          ],
+          [
+            "PF00001923-A.PDF",
+            0.75
+          ],
+          [
+            "PF00005877-A.pdf",
+            0.7
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "704.0256.00.0": 3
+        },
+        "unwanted_ranks": {
+          "702.0124.00.0": null,
+          "702.0144.00.0": null,
+          "701.1829.00.0": null
+        },
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 0.3333333333333333,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00018620",
+        "thresholds": {
+          "0.3": {
+            "shown": 5,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.5": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.3
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.096,
+        "top5": [
+          [
+            "SUPCH00022.PDF",
+            0.3
+          ],
+          [
+            "PF00019043-A",
+            0.3
+          ],
+          [
+            "704.0256.00.0.pdf",
+            0.3
+          ],
+          [
+            "PF00018886-A",
+            0.3
+          ],
+          [
+            "ELI211012136A.pdf",
+            0.3
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "701.2320.00.0": 1,
+          "701.2332.00.0": null
+        },
+        "unwanted_ranks": {
+          "PF00004573": null,
+          "PF00017257": null,
+          "701.2146.00.0": null
+        },
+        "recall@5": 0.5,
+        "recall@10": 0.5,
+        "recall@20": 0.5,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "701.2425.00.0",
+        "thresholds": {
+          "0.3": {
+            "shown": 3,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.5": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.4
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.112,
+        "top5": [
+          [
+            "701.2320.00.0.pdf",
+            0.4
+          ],
+          [
+            "SIS411012140A.pdf",
+            0.3
+          ],
+          [
+            "PF00018825-A con note.pdf",
+            0.3
+          ],
+          [
+            "701.2366.00.0.pdf",
+            0.2
+          ],
+          [
+            "MIN211034110A.pdf",
+            0.2
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "PF00013561": 1,
+          "PF00017176-A": 2
+        },
+        "unwanted_ranks": {
+          "PF00001092-E": null
+        },
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00016814",
+        "thresholds": {
+          "0.3": {
+            "shown": 2,
+            "expected_shown": 2,
+            "unwanted_shown": 0
+          },
+          "0.5": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.4,
+          0.3
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.048,
+        "top5": [
+          [
+            "PF00013561.pdf",
+            0.4
+          ],
+          [
+            "PF00017176-A",
+            0.3
+          ],
+          [
+            "PF00002197.pdf",
+            0.2
+          ],
+          [
+            "FORCE00006",
+            0.2
+          ],
+          [
+            "LEVA000013.PDF",
+            0.1
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "701.1829.00.0": 1,
+          "701.1831.00.0": 3
+        },
+        "unwanted_ranks": {
+          "701.2146.00.0": 33,
+          "702.0144.00.0": null,
+          "PF00002831-A": null,
+          "PF00002392": null
+        },
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "701.1828.00.0",
+        "thresholds": {
+          "0.3": {
+            "shown": 3,
+            "expected_shown": 2,
+            "unwanted_shown": 0
+          },
+          "0.5": {
+            "shown": 3,
+            "expected_shown": 2,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 2,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.75,
+          0.5
+        ],
+        "p_unwanted": [
+          0.0
+        ],
+        "p_others_mean": 0.093,
+        "top5": [
+          [
+            "701.1829.00.0",
+            0.75
+          ],
+          [
+            "701.1830.00.0.pdf",
+            0.75
+          ],
+          [
+            "701.1831.00.0",
+            0.5
+          ],
+          [
+            "CODOL00004.pdf",
+            0.2
+          ],
+          [
+            "425519111A.pdf",
+            0.2
+          ]
+        ]
+      }
+    ]
+  }
+}
