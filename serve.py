@@ -358,12 +358,38 @@ def _connect():
                     conn.set_grpc_metadata(meta_list)
                 except Exception:
                     pass
-            debug_meta = getattr(conn, "grpc_metadata", None)
-            print(f"[vertex-oauth] grpc metadata now: {debug_meta}")
+            # Non loggare mai i valori: contengono token Vertex e chiave OpenAI.
+            debug_meta = getattr(conn, "grpc_metadata", None) or []
+            print(f"[vertex-oauth] grpc metadata now: {_mask_metadata(debug_meta)}")
     except Exception as e:
         print("[weaviate] warning: cannot set gRPC metadata headers:", e)
 
     return client
+
+
+_SECRET_META_KEYS = ("key", "token", "authorization", "secret")
+
+
+def _mask_secret(value: Any) -> str:
+    s = str(value or "")
+    if len(s) <= 8:
+        return "***"
+    return f"{s[:4]}...{s[-2:]} (len={len(s)})"
+
+
+def _mask_metadata(meta: Any) -> List[tuple]:
+    """Restituisce i metadata gRPC con i valori sensibili mascherati, per il logging."""
+    masked = []
+    try:
+        items = meta.items() if isinstance(meta, dict) else list(meta)
+        for k, v in items:
+            if any(s in str(k).lower() for s in _SECRET_META_KEYS):
+                masked.append((k, _mask_secret(v)))
+            else:
+                masked.append((k, v))
+    except Exception:
+        return [("<unprintable>", "***")]
+    return masked
 
 
 def _update_client_grpc_metadata(client):
@@ -2098,6 +2124,15 @@ _FUSION_W_DINO = float(os.environ.get("FUSION_W_DINO", "0.5"))
 _FUSION_W_CAP = float(os.environ.get("FUSION_W_CAP", "0.5"))
 _FUSION_POOL = int(os.environ.get("FUSION_POOL", "50"))
 _FUSION_ENABLED = os.environ.get("FUSION_ENABLED", "1").lower() in ("1", "true", "yes")
+# Normalizzazione dei punteggi prima della fusione:
+#   minmax        -> comportamento storico
+#   minmax_noself -> min-max DINOv2 escludendo i match quasi identici (>= FUSION_SELF_THRESHOLD)
+#   rrf           -> Reciprocal Rank Fusion su entrambe le liste
+_FUSION_NORM = os.environ.get("FUSION_NORM", "minmax").strip().lower()
+_FUSION_SELF_THRESHOLD = float(os.environ.get("FUSION_SELF_THRESHOLD", "0.995"))
+_FUSION_RRF_K = int(os.environ.get("FUSION_RRF_K", "60"))
+# Proprietà richieste sul pool caption: niente image_b64 (limite gRPC 100 MB).
+_FUSION_POOL_PROPS = ["source_pdf", "caption"]
 
 _dino_model = None
 _dino_processor = None
@@ -2176,6 +2211,64 @@ def _fusion_normalize(results, score_key="score"):
     return [{**r, "norm_score": ((r.get(score_key) or 0) - mn) / rng} for r in results]
 
 
+def _fusion_normalize_noself(results, score_key="score", self_threshold=None):
+    """
+    Min-max che esclude i match quasi identici (es. il disegno stesso, già in archivio).
+    Con il match identico a score ~1.0 il min-max schiaccia tutti gli altri verso 0
+    e annulla il contributo DINOv2 per i pezzi simili. I match identici ricevono 1.0.
+    """
+    thr = _FUSION_SELF_THRESHOLD if self_threshold is None else self_threshold
+    if not results:
+        return results
+    rest = [r for r in results if (r.get(score_key) or 0) < thr]
+    if not rest:
+        return [{**r, "norm_score": 1.0} for r in results]
+    scores = [r.get(score_key) or 0 for r in rest]
+    mn, mx = min(scores), max(scores)
+    rng = mx - mn if mx > mn else 1.0
+    out = []
+    for r in results:
+        s = r.get(score_key) or 0
+        out.append({**r, "norm_score": 1.0 if s >= thr else (s - mn) / rng})
+    return out
+
+
+def _fusion_rrf(results, k=None):
+    """Reciprocal Rank Fusion: punteggio 1/(k+rank) riscalato in [0,1]; ignora la scala dei punteggi."""
+    k = _FUSION_RRF_K if k is None else k
+    if not results:
+        return results
+    ordered = sorted(results, key=lambda r: r.get("score") or 0, reverse=True)
+    top = 1.0 / (k + 1)
+    return [{**r, "norm_score": (1.0 / (k + i + 1)) / top} for i, r in enumerate(ordered)]
+
+
+def _fetch_images_by_uuid(client, collection_name, uuids_by_pdf):
+    """
+    Recupera image_b64 per i soli risultati finali, un oggetto alla volta per UUID
+    (esatto e sempre sotto il limite gRPC). uuids_by_pdf: {source_pdf: uuid}.
+    """
+    images: Dict[str, Any] = {}
+    if not uuids_by_pdf:
+        return images
+    try:
+        coll = client.collections.get(collection_name)
+    except Exception as exc:
+        print(f"[fusion] images: collection {collection_name} non disponibile: {exc}")
+        return images
+    for pdf, obj_id in uuids_by_pdf.items():
+        if not obj_id:
+            continue
+        try:
+            o = coll.query.fetch_object_by_id(obj_id, return_properties=["image_b64"])
+        except Exception as exc:
+            print(f"[fusion] images: fetch {pdf} fallito su {collection_name}: {exc}")
+            continue
+        if o is not None and o.properties.get("image_b64"):
+            images[pdf] = o.properties["image_b64"]
+    return images
+
+
 def _do_fusion_search(client, image_b64, limit=20):
     """
     Fusion DINOv2 + Caption: fetches top-pool from both SindeDino (near_vector)
@@ -2196,17 +2289,20 @@ def _do_fusion_search(client, image_b64, limit=20):
 
     # 2. DINOv2 near_vector on SindeDino
     dino_coll = client.collections.get(_DINO_COLLECTION_NAME)
+    # Niente image_b64 sul pool: 50 immagini superano il limite gRPC di 100 MB
+    # (RESOURCE_EXHAUSTED) e mandano tutta la fusion in fallback.
+    # Le immagini si recuperano dopo, solo per i risultati finali.
     resp_dino = dino_coll.query.near_vector(
         near_vector=query_embedding,
         limit=pool,
-        return_properties=["source_pdf", "image_b64"],
+        return_properties=["source_pdf"],
         return_metadata=MetadataQuery(distance=True),
     )
     res_dino = [
         {
             "source_pdf": o.properties.get("source_pdf", ""),
             "score": 1.0 - (getattr(o.metadata, "distance", 0) or 0),
-            "image_b64": o.properties.get("image_b64"),
+            "uuid": str(o.uuid),
         }
         for o in getattr(resp_dino, "objects", [])
     ]
@@ -2229,7 +2325,7 @@ def _do_fusion_search(client, image_b64, limit=20):
                     alpha=0.2,
                     query_properties=["caption"],
                     limit=pool,
-                    return_properties=["source_pdf", "caption", "image_b64"],
+                    return_properties=_FUSION_POOL_PROPS,
                     return_metadata=MetadataQuery(score=True),
                 )
             except Exception as exc:
@@ -2238,7 +2334,7 @@ def _do_fusion_search(client, image_b64, limit=20):
                     query=caption,
                     query_properties=["caption"],
                     limit=pool,
-                    return_properties=["source_pdf", "caption", "image_b64"],
+                    return_properties=_FUSION_POOL_PROPS,
                     return_metadata=MetadataQuery(score=True),
                 )
             res_cap = [
@@ -2246,18 +2342,26 @@ def _do_fusion_search(client, image_b64, limit=20):
                     "source_pdf": o.properties.get("source_pdf", ""),
                     "score": getattr(o.metadata, "score", None),
                     "properties": o.properties,
+                    "uuid": str(o.uuid),
                 }
                 for o in getattr(resp_cap, "objects", [])
             ]
     else:
         print("[fusion] DINOv2-only mode (w_cap=0)")
 
-    # 4. Normalize
-    res_dino_n = _fusion_normalize(res_dino, "score")
-    res_cap_n = _fusion_normalize(res_cap, "score")
+    # 4. Normalize (FUSION_NORM: minmax | minmax_noself | rrf)
+    norm = _FUSION_NORM
+    if norm == "rrf":
+        res_dino_n = _fusion_rrf(res_dino)
+        res_cap_n = _fusion_rrf(res_cap)
+    elif norm == "minmax_noself":
+        res_dino_n = _fusion_normalize_noself(res_dino, "score")
+        res_cap_n = _fusion_normalize(res_cap, "score")
+    else:
+        res_dino_n = _fusion_normalize(res_dino, "score")
+        res_cap_n = _fusion_normalize(res_cap, "score")
 
     dino_map = {r["source_pdf"]: r["norm_score"] for r in res_dino_n}
-    dino_img_map = {r["source_pdf"]: r.get("image_b64") for r in res_dino}
 
     cap_map = {r["source_pdf"]: r["norm_score"] for r in res_cap_n}
     cap_props_map = {r["source_pdf"]: r.get("properties", {}) for r in res_cap}
@@ -2278,10 +2382,22 @@ def _do_fusion_search(client, image_b64, limit=20):
     fused.sort(key=lambda x: x["fusion_score"], reverse=True)
     fused = fused[:limit]
 
-    print(f"[fusion] w_dino={w_dino}, w_cap={w_cap}, pool={pool}, "
+    print(f"[fusion] norm={norm}, w_dino={w_dino}, w_cap={w_cap}, pool={pool}, "
           f"dino_hits={len(dino_map)}, cap_hits={len(cap_map)}, fused={len(fused)}")
 
-    # 7. Build output — prefer Sinde5 properties (name, mediaType, page_index)
+    # 7. Immagini solo per i risultati finali, a piccoli lotti (limite gRPC).
+    final_pdfs = [r["source_pdf"] for r in fused]
+    cap_uuid = {r["source_pdf"]: r.get("uuid") for r in res_cap}
+    dino_uuid = {r["source_pdf"]: r.get("uuid") for r in res_dino}
+    img_map = _fetch_images_by_uuid(
+        client, _get_default_collection(),
+        {p: cap_uuid[p] for p in final_pdfs if cap_uuid.get(p)},
+    )
+    missing = {p: dino_uuid[p] for p in final_pdfs if not img_map.get(p) and dino_uuid.get(p)}
+    if missing:
+        img_map.update(_fetch_images_by_uuid(client, _DINO_COLLECTION_NAME, missing))
+
+    # 8. Build output — prefer Sinde5 properties (caption)
     out = []
     for r in fused:
         pdf = r["source_pdf"]
@@ -2291,8 +2407,8 @@ def _do_fusion_search(client, image_b64, limit=20):
             props = {
                 "source_pdf": pdf,
                 "name": pdf.replace(".pdf", ""),
-                "image_b64": dino_img_map.get(pdf),
             }
+        props["image_b64"] = img_map.get(pdf)
         out.append({
             "uuid": "",
             "properties": props,
