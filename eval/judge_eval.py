@@ -235,17 +235,19 @@ def mean(vals: List[Optional[float]]) -> Optional[float]:
 # esecuzione
 # ---------------------------------------------------------------------------
 
-def run_judge(judge: str, model: str, cases: List[Dict[str, Any]], max_cands: int, workers: int) -> None:
+def run_judge(judge: str, model: str, cases: List[Dict[str, Any]], max_cands: int, workers: int, masked: bool = False) -> None:
     fn = JUDGES[judge]
+    label = f"{judge}_{model}" + ("_masked" if masked else "")
     tasks = []
     for case in cases:
-        cache = CACHE_DIR / f"{judge}_{model}" / case["tc"]["input"]
+        cache = CACHE_DIR / label / case["tc"]["input"]
         cache.mkdir(parents=True, exist_ok=True)
+        img_dir = case["dir"] / "masked" if masked else case["dir"]
         for c in case["cands"][:max_cands]:
             out_file = cache / f"{c['image']}.json"
             if not out_file.exists():
-                tasks.append((case["dir"] / case["query"], case["dir"] / c["image"], out_file, case["tc"]["input"], c["name"]))
-    print(f"[{judge}:{model}] coppie da giudicare: {len(tasks)} (le altre sono in cache)")
+                tasks.append((img_dir / case["query"], img_dir / c["image"], out_file, case["tc"]["input"], c["name"]))
+    print(f"[{label}] coppie da giudicare: {len(tasks)} (le altre sono in cache)")
     done = 0
     errors = 0
     with ThreadPoolExecutor(max_workers=workers) as ex:
@@ -327,7 +329,9 @@ def main() -> int:
     ap.add_argument("--max-cands", type=int, default=50)
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--thresholds", type=float, nargs="+", default=[0.5, 0.7, 0.9])
-    ap.add_argument("--report", nargs="*", metavar="JUDGE", help="solo report da cache, es. --report liquid llm")
+    ap.add_argument("--report", nargs="*", metavar="JUDGE",
+                    help="solo report da cache, es. --report liquid llm liquid_masked llm_masked")
+    ap.add_argument("--masked", action="store_true", help="usa le immagini con il cartiglio coperto (mask_titleblock.py)")
     args = ap.parse_args()
 
     load_dotenv(EVAL_DIR / ".env")
@@ -340,10 +344,13 @@ def main() -> int:
     judges = args.report if args.report is not None else ([args.judge] if args.judge else [])
     labels: List[str] = []
     for j in judges:
+        masked = args.masked
+        if j.endswith("_masked"):
+            j, masked = j[: -len("_masked")], True
         model = args.model or DEFAULT_MODELS[j]
-        label = f"{j}_{model}"
+        label = f"{j}_{model}" + ("_masked" if masked else "")
         if args.report is None:
-            run_judge(j, model, cases, args.max_cands, args.workers)
+            run_judge(j, model, cases, args.max_cands, args.workers, masked)
         labels.append(label)
 
     report: Dict[str, Any] = {"baseline": evaluate(None, cases, args.max_cands, args.thresholds)}

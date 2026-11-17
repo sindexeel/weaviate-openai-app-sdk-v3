@@ -1,0 +1,905 @@
+{
+  "baseline": {
+    "summary": {
+      "recall@5": 0.083,
+      "recall@10": 0.083,
+      "recall@20": 0.5,
+      "mrr": 0.1,
+      "unwanted@5_total": 1,
+      "unwanted@10_total": 1
+    },
+    "cases": [
+      {
+        "expected_ranks": {
+          "702.0144.00": 16
+        },
+        "unwanted_ranks": {
+          "SM02013561A": null,
+          "PF00011631-B": null
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 1.0,
+        "mrr": 0.0625,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "702.0019.00.0"
+      },
+      {
+        "expected_ranks": {
+          "PF00018845": 19,
+          "PF00005877-A": 12,
+          "PF00015175": 16
+        },
+        "unwanted_ranks": {},
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 1.0,
+        "mrr": 0.08333333333333333,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00009371"
+      },
+      {
+        "expected_ranks": {
+          "704.0256.00.0": 28
+        },
+        "unwanted_ranks": {
+          "702.0124.00.0": null,
+          "702.0144.00.0": null,
+          "701.1829.00.0": null
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.03571428571428571,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00018620"
+      },
+      {
+        "expected_ranks": {
+          "701.2320.00.0": 19,
+          "701.2332.00.0": null
+        },
+        "unwanted_ranks": {
+          "PF00004573": null,
+          "PF00017257": null,
+          "701.2146.00.0": null
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.5,
+        "mrr": 0.05263157894736842,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "701.2425.00.0"
+      },
+      {
+        "expected_ranks": {
+          "PF00013561": 31,
+          "PF00017176-A": 45
+        },
+        "unwanted_ranks": {
+          "PF00001092-E": null
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.03225806451612903,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00016814"
+      },
+      {
+        "expected_ranks": {
+          "701.1829.00.0": 3,
+          "701.1831.00.0": 36
+        },
+        "unwanted_ranks": {
+          "701.2146.00.0": 1,
+          "702.0144.00.0": null,
+          "PF00002831-A": null,
+          "PF00002392": null
+        },
+        "recall@5": 0.5,
+        "recall@10": 0.5,
+        "recall@20": 0.5,
+        "mrr": 0.3333333333333333,
+        "unwanted@5": 1,
+        "unwanted@10": 1,
+        "input": "701.1828.00.0"
+      }
+    ]
+  },
+  "liquid_d1.2-ultra_masked": {
+    "summary": {
+      "recall@5": 0.611,
+      "recall@10": 0.75,
+      "recall@20": 0.917,
+      "mrr": 0.604,
+      "unwanted@5_total": 0,
+      "unwanted@10_total": 0,
+      "t0.5_shown_avg": 8.5,
+      "t0.5_expected_shown": 8,
+      "t0.5_unwanted_shown": 0,
+      "t0.7_shown_avg": 2.3,
+      "t0.7_expected_shown": 4,
+      "t0.7_unwanted_shown": 0,
+      "t0.9_shown_avg": 0.2,
+      "t0.9_expected_shown": 0,
+      "t0.9_unwanted_shown": 0,
+      "p_expected_mean": 0.64,
+      "p_unwanted_mean": 0.465,
+      "p_others_mean": 0.279
+    },
+    "cases": [
+      {
+        "expected_ranks": {
+          "702.0144.00": 1
+        },
+        "unwanted_ranks": {
+          "SM02013561A": null,
+          "PF00011631-B": null
+        },
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "702.0019.00.0",
+        "thresholds": {
+          "0.5": {
+            "shown": 3,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.69
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.233,
+        "top5": [
+          [
+            "702.0144.00.0.pdf",
+            0.69
+          ],
+          [
+            "AKF111020107A.PDF",
+            0.637
+          ],
+          [
+            "INNES00003.PDF",
+            0.558
+          ],
+          [
+            "ORR111020120A.PDF",
+            0.488
+          ],
+          [
+            "BEN211055110A",
+            0.477
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "PF00018845": 2,
+          "PF00005877-A": 6,
+          "PF00015175": 3
+        },
+        "unwanted_ranks": {},
+        "recall@5": 0.6666666666666666,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 0.5,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00009371",
+        "thresholds": {
+          "0.5": {
+            "shown": 12,
+            "expected_shown": 3,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 4,
+            "expected_shown": 2,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 1,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.772,
+          0.738,
+          0.659
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.341,
+        "top5": [
+          [
+            "PF00001923-A.PDF",
+            0.923
+          ],
+          [
+            "PF00018845.pdf",
+            0.772
+          ],
+          [
+            "PF00015175.pdf",
+            0.738
+          ],
+          [
+            "701.2564.00.0",
+            0.709
+          ],
+          [
+            "PF00015676-A Pignone M6 Z=17.pdf",
+            0.69
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "704.0256.00.0": 2
+        },
+        "unwanted_ranks": {
+          "702.0124.00.0": null,
+          "702.0144.00.0": null,
+          "701.1829.00.0": null
+        },
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 0.5,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00018620",
+        "thresholds": {
+          "0.5": {
+            "shown": 11,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 2,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.772
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.336,
+        "top5": [
+          [
+            "SUPCH00022.PDF",
+            0.796
+          ],
+          [
+            "704.0256.00.0.pdf",
+            0.772
+          ],
+          [
+            "00004-09-101-00.PDF",
+            0.7
+          ],
+          [
+            "00001-09-201-00.pdf",
+            0.69
+          ],
+          [
+            "00001-09-201-01.PDF",
+            0.669
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "701.2320.00.0": 2,
+          "701.2332.00.0": null
+        },
+        "unwanted_ranks": {
+          "PF00004573": null,
+          "PF00017257": null,
+          "701.2146.00.0": null
+        },
+        "recall@5": 0.5,
+        "recall@10": 0.5,
+        "recall@20": 0.5,
+        "mrr": 0.5,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "701.2425.00.0",
+        "thresholds": {
+          "0.5": {
+            "shown": 6,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 1,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.7
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.229,
+        "top5": [
+          [
+            "701.2366.00.0.pdf",
+            0.755
+          ],
+          [
+            "701.2320.00.0.pdf",
+            0.7
+          ],
+          [
+            "2450628-Rev.5.pdf",
+            0.593
+          ],
+          [
+            "MIN211034110A.pdf",
+            0.523
+          ],
+          [
+            "SIS411012140A.pdf",
+            0.512
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "PF00013561": 8,
+          "PF00017176-A": 16
+        },
+        "unwanted_ranks": {
+          "PF00001092-E": null
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.5,
+        "recall@20": 1.0,
+        "mrr": 0.125,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00016814",
+        "thresholds": {
+          "0.5": {
+            "shown": 6,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 2,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.43,
+          0.291
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.223,
+        "top5": [
+          [
+            "PF00013651",
+            0.811
+          ],
+          [
+            "PF00002197.pdf",
+            0.738
+          ],
+          [
+            "CM-00819-820-19747.pdf",
+            0.669
+          ],
+          [
+            "PF00013595-C con note.pdf",
+            0.637
+          ],
+          [
+            "LEVA000031-A.PDF",
+            0.512
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "701.1829.00.0": 1,
+          "701.1831.00.0": 12
+        },
+        "unwanted_ranks": {
+          "701.2146.00.0": 14,
+          "702.0144.00.0": null,
+          "PF00002831-A": null,
+          "PF00002392": null
+        },
+        "recall@5": 0.5,
+        "recall@10": 0.5,
+        "recall@20": 1.0,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "701.1828.00.0",
+        "thresholds": {
+          "0.5": {
+            "shown": 13,
+            "expected_shown": 2,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 5,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.796,
+          0.547
+        ],
+        "p_unwanted": [
+          0.465
+        ],
+        "p_others_mean": 0.314,
+        "top5": [
+          [
+            "701.1829.00.0",
+            0.796
+          ],
+          [
+            "701.1830.00.0.pdf",
+            0.796
+          ],
+          [
+            "701.1872.00.1",
+            0.738
+          ],
+          [
+            "701.1043.00.0.pdf",
+            0.719
+          ],
+          [
+            "705.0013.00.0.pdf",
+            0.709
+          ]
+        ]
+      }
+    ]
+  },
+  "llm_gpt-4.1-mini_masked": {
+    "summary": {
+      "recall@5": 0.639,
+      "recall@10": 0.833,
+      "recall@20": 0.917,
+      "mrr": 0.608,
+      "unwanted@5_total": 0,
+      "unwanted@10_total": 0,
+      "t0.5_shown_avg": 2.7,
+      "t0.5_expected_shown": 5,
+      "t0.5_unwanted_shown": 0,
+      "t0.7_shown_avg": 1.7,
+      "t0.7_expected_shown": 4,
+      "t0.7_unwanted_shown": 0,
+      "t0.9_shown_avg": 0.0,
+      "t0.9_expected_shown": 0,
+      "t0.9_unwanted_shown": 0,
+      "p_expected_mean": 0.495,
+      "p_unwanted_mean": 0.1,
+      "p_others_mean": 0.142
+    },
+    "cases": [
+      {
+        "expected_ranks": {
+          "702.0144.00": 1
+        },
+        "unwanted_ranks": {
+          "SM02013561A": null,
+          "PF00011631-B": null
+        },
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "702.0019.00.0",
+        "thresholds": {
+          "0.5": {
+            "shown": 3,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 1,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.85
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.181,
+        "top5": [
+          [
+            "702.0144.00.0.pdf",
+            0.85
+          ],
+          [
+            "AKF111020107A.PDF",
+            0.6
+          ],
+          [
+            "INNES00003.PDF",
+            0.5
+          ],
+          [
+            "2012343-260.PDF",
+            0.3
+          ],
+          [
+            "93512148A",
+            0.3
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "PF00018845": 6,
+          "PF00005877-A": 5,
+          "PF00015175": 7
+        },
+        "unwanted_ranks": {},
+        "recall@5": 0.3333333333333333,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 0.2,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00009371",
+        "thresholds": {
+          "0.5": {
+            "shown": 8,
+            "expected_shown": 3,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 6,
+            "expected_shown": 2,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.7,
+          0.7,
+          0.6
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.223,
+        "top5": [
+          [
+            "PF00001923-A.PDF",
+            0.8
+          ],
+          [
+            "PF00005832.pdf",
+            0.7
+          ],
+          [
+            "PF00008665-B Pignone per Motore.pdf",
+            0.7
+          ],
+          [
+            "INGRA00032.pdf",
+            0.7
+          ],
+          [
+            "PF00005877-A.pdf",
+            0.7
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "704.0256.00.0": 5
+        },
+        "unwanted_ranks": {
+          "702.0124.00.0": null,
+          "702.0144.00.0": null,
+          "701.1829.00.0": null
+        },
+        "recall@5": 1.0,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 0.2,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00018620",
+        "thresholds": {
+          "0.5": {
+            "shown": 2,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 1,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.3
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.118,
+        "top5": [
+          [
+            "ELI211012136A.pdf",
+            0.7
+          ],
+          [
+            "SUPCH00022.PDF",
+            0.6
+          ],
+          [
+            "PF00009205",
+            0.3
+          ],
+          [
+            "PF00019043-A",
+            0.3
+          ],
+          [
+            "704.0256.00.0.pdf",
+            0.3
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "701.2320.00.0": 4,
+          "701.2332.00.0": null
+        },
+        "unwanted_ranks": {
+          "PF00004573": null,
+          "PF00017257": null,
+          "701.2146.00.0": null
+        },
+        "recall@5": 0.5,
+        "recall@10": 0.5,
+        "recall@20": 0.5,
+        "mrr": 0.25,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "701.2425.00.0",
+        "thresholds": {
+          "0.5": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.3
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.12,
+        "top5": [
+          [
+            "701.2366.00.0.pdf",
+            0.3
+          ],
+          [
+            "MIN211034110A.pdf",
+            0.3
+          ],
+          [
+            "SIS411012140A.pdf",
+            0.3
+          ],
+          [
+            "701.2320.00.0.pdf",
+            0.3
+          ],
+          [
+            "PF00018825-A con note.pdf",
+            0.3
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "PF00013561": 1,
+          "PF00017176-A": 7
+        },
+        "unwanted_ranks": {
+          "PF00001092-E": null
+        },
+        "recall@5": 0.5,
+        "recall@10": 1.0,
+        "recall@20": 1.0,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "PF00016814",
+        "thresholds": {
+          "0.5": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.4,
+          0.2
+        ],
+        "p_unwanted": [],
+        "p_others_mean": 0.066,
+        "top5": [
+          [
+            "PF00013561.pdf",
+            0.4
+          ],
+          [
+            "PF00013595-C.pdf",
+            0.3
+          ],
+          [
+            "LEVA000013.PDF",
+            0.2
+          ],
+          [
+            "SUPPO00016.PDF",
+            0.2
+          ],
+          [
+            "PF00013651",
+            0.2
+          ]
+        ]
+      },
+      {
+        "expected_ranks": {
+          "701.1829.00.0": 1,
+          "701.1831.00.0": 17
+        },
+        "unwanted_ranks": {
+          "701.2146.00.0": 20,
+          "702.0144.00.0": null,
+          "PF00002831-A": null,
+          "PF00002392": null
+        },
+        "recall@5": 0.5,
+        "recall@10": 0.5,
+        "recall@20": 1.0,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0,
+        "input": "701.1828.00.0",
+        "thresholds": {
+          "0.5": {
+            "shown": 3,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.7": {
+            "shown": 2,
+            "expected_shown": 1,
+            "unwanted_shown": 0
+          },
+          "0.9": {
+            "shown": 0,
+            "expected_shown": 0,
+            "unwanted_shown": 0
+          }
+        },
+        "p_expected": [
+          0.7,
+          0.2
+        ],
+        "p_unwanted": [
+          0.1
+        ],
+        "p_others_mean": 0.147,
+        "top5": [
+          [
+            "701.1829.00.0",
+            0.7
+          ],
+          [
+            "701.1830.00.0.pdf",
+            0.7
+          ],
+          [
+            "701.2455.00.0.pdf",
+            0.5
+          ],
+          [
+            "705.0013.00.0.pdf",
+            0.3
+          ],
+          [
+            "BER511011118A.pdf",
+            0.3
+          ]
+        ]
+      }
+    ]
+  }
+}
