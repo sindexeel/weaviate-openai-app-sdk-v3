@@ -1,0 +1,214 @@
+{
+  "config": {
+    "base_url": "https://weaviate-openai-app-sdk-v3.onrender.com",
+    "collection": "Sinde2",
+    "limit": 20,
+    "test_cases": "C:\\Progetti_IA\\Sinde\\weaviate-openai-app-sdk-v3\\weaviate-image-app\\public\\test_cases.json",
+    "timestamp": "20261117_144128"
+  },
+  "summary": {
+    "cases_ok": 6,
+    "cases_total": 6,
+    "recall@5": 0.0,
+    "recall@10": 0.139,
+    "recall@20": 0.278,
+    "mrr": 0.053,
+    "unwanted@5_total": 0,
+    "unwanted@10_total": 0,
+    "unwanted_total": 13,
+    "expected_total": 11
+  },
+  "cases": [
+    {
+      "input": "702.0019.00.0",
+      "self_rank": 1,
+      "expected_ranks": {
+        "702.0144.00": null
+      },
+      "unwanted_ranks": {
+        "SM02013561A": null,
+        "PF00011631-B": null
+      },
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "recall@20": 0.0,
+      "unwanted@5": 0,
+      "unwanted@10": 0,
+      "mrr": 0.0,
+      "top10": [
+        "701.1871.00.1.pdf",
+        "BUSSO00043.PDF",
+        "MAC220229106A.pdf",
+        "93512148A.pdf",
+        "93513113A.pdf",
+        "canot103.pdf",
+        "701.1872.00.1.pdf",
+        "PF00018904-A.pdf",
+        "BUSSO00004.PDF",
+        "PULEG00152.PDF"
+      ],
+      "search_seconds": 26.8,
+      "n_results": 20
+    },
+    {
+      "input": "PF00009371",
+      "self_rank": 7,
+      "expected_ranks": {
+        "PF00018845": 10,
+        "PF00005877-A": 16,
+        "PF00015175": null
+      },
+      "unwanted_ranks": {},
+      "recall@5": 0.0,
+      "recall@10": 0.3333333333333333,
+      "recall@20": 0.6666666666666666,
+      "unwanted@5": 0,
+      "unwanted@10": 0,
+      "mrr": 0.1,
+      "top10": [
+        "PF00005832.pdf",
+        "PF00008665-B Pignone per Motore.pdf",
+        "PF00015676-A Pignone M6 Z=17.pdf",
+        "PF00009173-A.pdf",
+        "PF00017430.pdf",
+        "PF00017429.pdf",
+        "PULEG00083.PDF",
+        "PF00001923-A.PDF",
+        "INGRA00032.pdf",
+        "PF00018845.pdf"
+      ],
+      "search_seconds": 13.3,
+      "n_results": 20
+    },
+    {
+      "input": "PF00018620",
+      "self_rank": 1,
+      "expected_ranks": {
+        "704.0256.00.0": null
+      },
+      "unwanted_ranks": {
+        "702.0124.00.0": null,
+        "702.0144.00.0": null,
+        "701.1829.00.0": null
+      },
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "recall@20": 0.0,
+      "unwanted@5": 0,
+      "unwanted@10": 0,
+      "mrr": 0.0,
+      "top10": [
+        "00004-09-101-00.PDF",
+        "1916829-202.PDF",
+        "PF00018715.pdf",
+        "601.0176.00.0.pdf",
+        "00018-09-004-00.PDF",
+        "00018-09-004-01.PDF",
+        "00053-09-001-00.PDF",
+        "2450484 (004).pdf",
+        "701.2276.00.0.pdf",
+        "CDE211011156A.pdf"
+      ],
+      "search_seconds": 22.1,
+      "n_results": 20
+    },
+    {
+      "input": "701.2425.00.0",
+      "self_rank": 1,
+      "expected_ranks": {
+        "701.2320.00.0": 8,
+        "701.2332.00.0": null
+      },
+      "unwanted_ranks": {
+        "PF00004573": null,
+        "PF00017257": null,
+        "701.2146.00.0": null
+      },
+      "recall@5": 0.0,
+      "recall@10": 0.5,
+      "recall@20": 0.5,
+      "unwanted@5": 0,
+      "unwanted@10": 0,
+      "mrr": 0.125,
+      "top10": [
+        "MIN211034110A.pdf",
+        "VIA222614128B.pdf",
+        "701.2321.00.0.pdf",
+        "EXP622029103A.pdf",
+        "PF00013595-C.pdf",
+        "PF00011477-C.pdf",
+        "899010900 SEAT STRIKER.pdf",
+        "701.2320.00.0.pdf",
+        "701.2317.00.0.pdf",
+        "701.2340.00.0.pdf"
+      ],
+      "search_seconds": 17.1,
+      "n_results": 20
+    },
+    {
+      "input": "PF00016814",
+      "self_rank": 1,
+      "expected_ranks": {
+        "PF00013561": null,
+        "PF00017176-A": null
+      },
+      "unwanted_ranks": {
+        "PF00001092-E": null
+      },
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "recall@20": 0.0,
+      "unwanted@5": 0,
+      "unwanted@10": 0,
+      "mrr": 0.0,
+      "top10": [
+        "889560080 female terminal external.pdf",
+        "00001-02-005-00.pdf",
+        "701.2340.00.0.pdf",
+        "PF00013595-C.pdf",
+        "PF00002197.pdf",
+        "MAC220229116A.pdf",
+        "701.2425.00.0.pdf",
+        "TAL111014128A.pdf",
+        "CM-00819-820-19747.pdf",
+        "FORCE00022.PDF"
+      ],
+      "search_seconds": 12.3,
+      "n_results": 20
+    },
+    {
+      "input": "701.1828.00.0",
+      "self_rank": 1,
+      "expected_ranks": {
+        "701.1829.00.0": 11,
+        "701.1831.00.0": null
+      },
+      "unwanted_ranks": {
+        "701.2146.00.0": 15,
+        "702.0144.00.0": null,
+        "PF00002831-A": null,
+        "PF00002392": null
+      },
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "recall@20": 0.5,
+      "unwanted@5": 0,
+      "unwanted@10": 0,
+      "mrr": 0.09090909090909091,
+      "top10": [
+        "233212153A.pdf",
+        "361713113A.pdf",
+        "701.2455.00.0.pdf",
+        "NIG211012159A.pdf",
+        "31813106A.pdf",
+        "BER511012115A.pdf",
+        "BER511011118A.pdf",
+        "701.1830.00.0.pdf",
+        "705.0013.00.0.pdf",
+        "CODOL00004.pdf"
+      ],
+      "search_seconds": 19.0,
+      "n_results": 20
+    }
+  ]
+}
