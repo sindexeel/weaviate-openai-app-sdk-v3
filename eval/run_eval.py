@@ -159,6 +159,63 @@ def fmt_ranks(d: Dict[str, Optional[int]]) -> str:
     return ", ".join(f"{c}:{r if r else '-'}" for c, r in d.items()) or "(nessuno)"
 
 
+_METRICS = ("recall@5", "recall@10", "recall@20", "mrr")
+_COUNTS = ("unwanted@5_total", "unwanted@10_total", "self_first")
+
+
+def summarize(scored: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Metriche di una singola passata sui test case."""
+    ok = [s for s in scored if "error" not in s]
+    with_exp = [s for s in ok if s["recall@10"] is not None]
+
+    def avg(key: str) -> Optional[float]:
+        return round(sum(r[key] for r in with_exp) / len(with_exp), 3) if with_exp else None
+
+    out: Dict[str, Any] = {"cases_ok": len(ok), "cases_total": len(scored)}
+    for m in _METRICS:
+        out[m] = avg(m)
+    out["unwanted@5_total"] = sum(s["unwanted@5"] for s in ok)
+    out["unwanted@10_total"] = sum(s["unwanted@10"] for s in ok)
+    out["self_first"] = sum(1 for s in ok if s["self_rank"] == 1)
+    out["fusion_cases"] = sum(1 for s in ok if s.get("mode") == "fusion")
+    out["unwanted_total"] = sum(len(s["unwanted_ranks"]) for s in ok)
+    out["expected_total"] = sum(len(s["expected_ranks"]) for s in ok)
+    return out
+
+
+def aggregate(summaries: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Media e min-max delle metriche tra ripetizioni. Con una sola ripetizione restituisce i valori."""
+    if len(summaries) == 1:
+        return summaries[0]
+    agg: Dict[str, Any] = {"repeats": len(summaries)}
+    for k in _METRICS + _COUNTS + ("fusion_cases", "cases_ok"):
+        vals = [s[k] for s in summaries if s.get(k) is not None]
+        if not vals:
+            agg[k] = None
+            continue
+        mean = sum(vals) / len(vals)
+        agg[k] = f"{mean:.3f} ({min(vals):.3f}-{max(vals):.3f})" if k in _METRICS else f"{mean:.1f} ({min(vals)}-{max(vals)})"
+    agg["expected_total"] = summaries[0].get("expected_total")
+    agg["unwanted_total"] = summaries[0].get("unwanted_total")
+    return agg
+
+
+def per_case_stability(runs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Per ogni input: modalità, posizione del disegno stesso e dei pezzi attesi in ogni ripetizione."""
+    out: Dict[str, Any] = {}
+    for run in runs:
+        for s in run["cases"]:
+            info = out.setdefault(s["input"], {"modes": [], "self_ranks": [], "expected": {}})
+            if "error" in s:
+                info["modes"].append("error")
+                continue
+            info["modes"].append(s.get("mode"))
+            info["self_ranks"].append(s.get("self_rank"))
+            for c, r in s["expected_ranks"].items():
+                info["expected"].setdefault(c, []).append(r)
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--base-url", default=DEFAULT_BASE_URL)
@@ -172,6 +229,12 @@ def main() -> int:
     ap.add_argument("--pdf-dir", type=Path, default=DEFAULT_PDF_DIR)
     ap.add_argument("--timeout", type=int, default=300)
     ap.add_argument("--label", default="run", help="etichetta del file risultati")
+    ap.add_argument(
+        "--repeats",
+        type=int,
+        default=1,
+        help="ripetizioni dell'intero set: la caption GPT varia tra run, servono medie per confrontare configurazioni",
+    )
     args = ap.parse_args()
 
     base_url = args.base_url.rstrip("/")
@@ -186,53 +249,49 @@ def main() -> int:
         print(f"[health] errore: {exc}")
         return 1
 
-    scored: List[Dict[str, Any]] = []
-    for tc in cases:
-        pdf = find_input_pdf(args.pdf_dir, tc["input"])
-        if not pdf:
-            print(f"[{tc['input']}] PDF di input non trovato in {args.pdf_dir}")
-            scored.append({"input": tc["input"], "error": "input pdf not found"})
-            continue
-        print(f"[{tc['input']}] ricerca con {pdf.name} ...", flush=True)
-        try:
-            out = run_case(session, base_url, args.collection, args.limit, pdf, args.timeout)
-        except Exception as exc:
-            print(f"   errore: {exc}")
-            scored.append({"input": tc["input"], "error": str(exc)})
-            continue
-        s = score_case(tc, out["results"])
-        s["search_seconds"] = out["search_seconds"]
-        s["n_results"] = len(out["results"])
-        s["mode"] = out["mode"]
-        s["raw"] = out["raw"]
-        scored.append(s)
-        print(
-            f"   [{s['mode']}] self:{s['self_rank'] or '-'}  attesi[{fmt_ranks(s['expected_ranks'])}]  "
-            f"indesiderati[{fmt_ranks(s['unwanted_ranks'])}]  ({s['search_seconds']}s)"
-        )
+    pdfs = {tc["input"]: find_input_pdf(args.pdf_dir, tc["input"]) for tc in cases}
 
-    ok = [s for s in scored if "error" not in s]
-    with_exp = [s for s in ok if s["recall@10"] is not None]
+    runs: List[Dict[str, Any]] = []
+    for rep in range(1, args.repeats + 1):
+        if args.repeats > 1:
+            print(f"\n--- Ripetizione {rep}/{args.repeats} ---")
+        scored: List[Dict[str, Any]] = []
+        for tc in cases:
+            pdf = pdfs[tc["input"]]
+            if not pdf:
+                print(f"[{tc['input']}] PDF di input non trovato in {args.pdf_dir}")
+                scored.append({"input": tc["input"], "error": "input pdf not found"})
+                continue
+            print(f"[{tc['input']}] ricerca con {pdf.name} ...", flush=True)
+            try:
+                out = run_case(session, base_url, args.collection, args.limit, pdf, args.timeout)
+            except Exception as exc:
+                print(f"   errore: {exc}")
+                scored.append({"input": tc["input"], "error": str(exc)})
+                continue
+            s = score_case(tc, out["results"])
+            s["search_seconds"] = out["search_seconds"]
+            s["n_results"] = len(out["results"])
+            s["mode"] = out["mode"]
+            s["raw"] = out["raw"]
+            scored.append(s)
+            print(
+                f"   [{s['mode']}] self:{s['self_rank'] or '-'}  attesi[{fmt_ranks(s['expected_ranks'])}]  "
+                f"indesiderati[{fmt_ranks(s['unwanted_ranks'])}]  ({s['search_seconds']}s)"
+            )
+        runs.append({"repeat": rep, "summary": summarize(scored), "cases": scored})
 
-    def avg(key: str, rows: List[Dict[str, Any]]) -> Optional[float]:
-        return round(sum(r[key] for r in rows) / len(rows), 3) if rows else None
+    summary = aggregate([r["summary"] for r in runs])
+    per_case = per_case_stability(runs)
 
-    summary = {
-        "cases_ok": len(ok),
-        "cases_total": len(scored),
-        "recall@5": avg("recall@5", with_exp),
-        "recall@10": avg("recall@10", with_exp),
-        "recall@20": avg("recall@20", with_exp),
-        "mrr": avg("mrr", with_exp),
-        "unwanted@5_total": sum(s["unwanted@5"] for s in ok),
-        "unwanted@10_total": sum(s["unwanted@10"] for s in ok),
-        "unwanted_total": sum(len(s["unwanted_ranks"]) for s in ok),
-        "expected_total": sum(len(s["expected_ranks"]) for s in ok),
-    }
-
-    print("\n=== Riepilogo ===")
+    print("\n=== Riepilogo ===" + (f" (media su {args.repeats} ripetizioni, min-max)" if args.repeats > 1 else ""))
     for k, v in summary.items():
         print(f"{k:>18}: {v}")
+    if args.repeats > 1:
+        print("\n=== Stabilità per caso (posizioni dei pezzi attesi nelle ripetizioni) ===")
+        for inp, info in per_case.items():
+            ranks = "; ".join(f"{c}:{','.join(str(x) if x else '-' for x in rs)}" for c, rs in info["expected"].items())
+            print(f"{inp:>15}  modi={info['modes']}  self={info['self_ranks']}  {ranks or '(nessun atteso)'}")
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -245,10 +304,14 @@ def main() -> int:
                     "collection": args.collection,
                     "limit": args.limit,
                     "test_cases": str(args.test_cases),
+                    "repeats": args.repeats,
                     "timestamp": stamp,
                 },
                 "summary": summary,
-                "cases": scored,
+                "per_case": per_case,
+                "runs": runs,
+                # compatibilità con i file precedenti: casi dell'ultima ripetizione
+                "cases": runs[-1]["cases"] if runs else [],
             },
             indent=2,
             ensure_ascii=False,
@@ -256,7 +319,7 @@ def main() -> int:
         encoding="utf-8",
     )
     print(f"\nRisultati salvati in {out_path}")
-    return 0 if ok else 1
+    return 0 if any(r["summary"]["cases_ok"] for r in runs) else 1
 
 
 if __name__ == "__main__":
