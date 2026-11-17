@@ -1,0 +1,5 @@
+# chiavi API locali
+.env
+# immagini dei disegni del cliente (candidati congelati)
+candidates/
+__pycache__/
