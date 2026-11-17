@@ -1,0 +1,1192 @@
+{
+  "config": {
+    "base_url": "https://weaviate-openai-app-sdk-v3.onrender.com",
+    "collection": "Sinde5",
+    "limit": 20,
+    "test_cases": "C:\\Progetti_IA\\Sinde\\weaviate-openai-app-sdk-v3\\weaviate-image-app\\public\\test_cases.json",
+    "timestamp": "20261117_152239"
+  },
+  "summary": {
+    "cases_ok": 6,
+    "cases_total": 6,
+    "recall@5": 0.0,
+    "recall@10": 0.278,
+    "recall@20": 0.5,
+    "mrr": 0.074,
+    "unwanted@5_total": 0,
+    "unwanted@10_total": 1,
+    "unwanted_total": 13,
+    "expected_total": 11
+  },
+  "cases": [
+    {
+      "input": "702.0019.00.0",
+      "self_rank": 1,
+      "expected_ranks": {
+        "702.0144.00": 8
+      },
+      "unwanted_ranks": {
+        "SM02013561A": null,
+        "PF00011631-B": null
+      },
+      "recall@5": 0.0,
+      "recall@10": 1.0,
+      "recall@20": 1.0,
+      "unwanted@5": 0,
+      "unwanted@10": 0,
+      "mrr": 0.125,
+      "top10": [
+        "AKF111020107A.PDF",
+        "MAC220229106A.pdf",
+        "93512148A.pdf",
+        "15313110A.pdf",
+        "308020120A.PDF",
+        "BUSSO00018.PDF",
+        "31811115A.pdf",
+        "702.0144.00.0.pdf",
+        "71513111A.pdf",
+        "BEN211055110A"
+      ],
+      "search_seconds": 41.0,
+      "n_results": 20,
+      "mode": "fusion",
+      "raw": [
+        {
+          "name": "702.0019.00.0",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.5,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "AKF111020107A.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.5,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "MAC220229106A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.3773441296183425,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "93512148A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.31190648453339476,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "15313110A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.30019727780756006,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "308020120A.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.28597116118334537,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "BUSSO00018.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2745900311612952,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "31811115A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.23724634138896153,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "702.0144.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.22061932227098985,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "71513111A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.17686012337566004,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "BEN211055110A",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.16353072418825332,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "AME411035111A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.15752927309777148,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "93513113A",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.15031589700934084,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "SM01011546-F.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1502226558150191,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "EXP611055113A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.14906063382229867,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "214511146A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.14884687706183783,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "BOD511067106A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1453716354190504,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PRS111055118A",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.14194268403367521,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "GHI111020107A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.12386797640233799,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "CHIOC00035.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.11658239689309885,
+          "dim_similarity": null,
+          "combined_score": null
+        }
+      ]
+    },
+    {
+      "input": "PF00009371",
+      "self_rank": 1,
+      "expected_ranks": {
+        "PF00018845": 9,
+        "PF00005877-A": 11,
+        "PF00015175": 6
+      },
+      "unwanted_ranks": {},
+      "recall@5": 0.0,
+      "recall@10": 0.6666666666666666,
+      "recall@20": 1.0,
+      "unwanted@5": 0,
+      "unwanted@10": 0,
+      "mrr": 0.16666666666666666,
+      "top10": [
+        "PF00005832.pdf",
+        "PF00015676-A Pignone M6 Z=17.pdf",
+        "PF00001923-A.PDF",
+        "PF00008665-B Pignone per Motore.pdf",
+        "PF00017430.pdf",
+        "PF00015175.pdf",
+        "PF00017429.pdf",
+        "PULEG00083.PDF",
+        "PF00018845.pdf",
+        "PF00016816-A.PDF"
+      ],
+      "search_seconds": 20.1,
+      "n_results": 20,
+      "mode": "fusion",
+      "raw": [
+        {
+          "name": "PF00009371.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.8213434409322264,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00005832.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.5,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00015676-A Pignone M6 Z=17.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.38092985265730966,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00001923-A.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.3562305702593042,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00008665-B Pignone per Motore.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.3230233673157684,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00017430.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.23801752080284794,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00015175.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.22902719234812524,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00017429.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.21927733188046092,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PULEG00083.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.20045331831598967,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00018845.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.19871660643249306,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00016816-A.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1921348038246685,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00005877-A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1806007938910027,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PULEG00164.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.17836075448450692,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00009173-A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.16224420422673955,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "INGRA00032.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1610332699476195,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "BER511011131A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.14851091168872566,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "705.0013.00.0",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1345433830805016,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.1870.00.1.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1163774893866805,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00019247.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.10675453617512846,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00011232-E",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.10610159114769153,
+          "dim_similarity": null,
+          "combined_score": null
+        }
+      ]
+    },
+    {
+      "input": "PF00018620",
+      "self_rank": 1,
+      "expected_ranks": {
+        "704.0256.00.0": null
+      },
+      "unwanted_ranks": {
+        "702.0124.00.0": null,
+        "702.0144.00.0": null,
+        "701.1829.00.0": null
+      },
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "recall@20": 0.0,
+      "unwanted@5": 0,
+      "unwanted@10": 0,
+      "mrr": 0.0,
+      "top10": [
+        "QC1811011107A.pdf",
+        "BER511012127A.pdf",
+        "2450626-Rev.3.pdf",
+        "FLANG00441.PDF",
+        "SUPPO00009.PDF",
+        "00001-09-201-00.pdf",
+        "00036-01-005-00.PDF",
+        "2450590.pdf",
+        "2450591.pdf",
+        "SAE111011106A.pdf"
+      ],
+      "search_seconds": 18.4,
+      "n_results": 20,
+      "mode": "fusion",
+      "raw": [
+        {
+          "name": "PF00018620",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.5,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "QC1811011107A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.5,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "BER511012127A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.4790801599737684,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "2450626-Rev.3.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.461643404708402,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "FLANG00441.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.39613048820400676,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "SUPPO00009.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.30243734035686926,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "00001-09-201-00.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2994830472784408,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "00036-01-005-00.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.27550869439878495,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "2450590.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.24256442405969397,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "2450591.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.24066085780509017,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "SAE111011106A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2330665910314005,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "2450568-Rev.2.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.22262952615511386,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "409413104A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2110175929701256,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "SUPCH00022.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.20454174231716957,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "2450590 Rev.4 Apr.24.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.19533908338102438,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "00001-09-201-01.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1830096893590749,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PIAST00729.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.17256971045284253,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "SCR511011117A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.16741132511645454,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "220413108B.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1591085300551144,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "00022-06-001-00.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.14045388168596554,
+          "dim_similarity": null,
+          "combined_score": null
+        }
+      ]
+    },
+    {
+      "input": "701.2425.00.0",
+      "self_rank": 1,
+      "expected_ranks": {
+        "701.2320.00.0": null,
+        "701.2332.00.0": 14
+      },
+      "unwanted_ranks": {
+        "PF00004573": null,
+        "PF00017257": null,
+        "701.2146.00.0": null
+      },
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "recall@20": 0.5,
+      "unwanted@5": 0,
+      "unwanted@10": 0,
+      "mrr": 0.07142857142857142,
+      "top10": [
+        "VIA222614128B.pdf",
+        "ALR111012156A.pdf",
+        "MIN211034110A.pdf",
+        "PF00016814.pdf",
+        "PF00013595-C.pdf",
+        "701.2317.00.0.pdf",
+        "701.2321.00.0.pdf",
+        "889560080 female terminal external.pdf",
+        "701.2340.00.0.pdf",
+        "00024-02-002-00.PDF"
+      ],
+      "search_seconds": 14.8,
+      "n_results": 20,
+      "mode": "fusion",
+      "raw": [
+        {
+          "name": "701.2425.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 1.0,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "VIA222614128B.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.3755771929983354,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "ALR111012156A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.35627461491009565,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "MIN211034110A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.33312297888484094,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00016814.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.246470696419107,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00013595-C.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.224112074142604,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.2317.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.21084150959897344,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.2321.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1996317507548591,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "889560080 female terminal external.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1993048824312666,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.2340.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.19876234183594002,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "00024-02-002-00.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.19324413353149808,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "00011-00-407-00.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.19057437371472483,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "MAC220229116A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.18065391518870624,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "899010900 SEAT STRIKER.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.17830305309189648,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.2332.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.17267879897178723,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "SUPCH00046.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.16941965593528302,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "212542171A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1660297949992629,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "00001-09-204-00.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.15758220592414993,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "CM-000415_butee_banc_mandrin_20x10x40.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.148330787604284,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "00001-02-005-00.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.14489558006484834,
+          "dim_similarity": null,
+          "combined_score": null
+        }
+      ]
+    },
+    {
+      "input": "PF00016814",
+      "self_rank": 1,
+      "expected_ranks": {
+        "PF00013561": null,
+        "PF00017176-A": null
+      },
+      "unwanted_ranks": {
+        "PF00001092-E": null
+      },
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "recall@20": 0.0,
+      "unwanted@5": 0,
+      "unwanted@10": 0,
+      "mrr": 0.0,
+      "top10": [
+        "889560080 female terminal external.pdf",
+        "00001-02-005-00.pdf",
+        "CM-00819-820-19747.pdf",
+        "701.2425.00.0.pdf",
+        "701.2340.00.0.pdf",
+        "PF00002197.pdf",
+        "RIC110510120A.pdf",
+        "LEVA000013.PDF",
+        "Pinze Etna.pdf",
+        "FORCE00006.pdf"
+      ],
+      "search_seconds": 20.1,
+      "n_results": 20,
+      "mode": "fusion",
+      "raw": [
+        {
+          "name": "PF00016814.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 1.0,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "889560080 female terminal external.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.49738256487575155,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "00001-02-005-00.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.467550829719839,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "CM-00819-820-19747.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.4618816109141364,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.2425.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.39990725035573593,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.2340.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.39087190687885787,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00002197.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.38158124278164,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "RIC110510120A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.3390842616710699,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "LEVA000013.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.30893087119559315,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "Pinze Etna.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.30284631233060016,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "FORCE00006.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.3024992286173008,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "2450484-1.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2952154515787313,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "TAL111014128A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2771224712483877,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "FORCE00022.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.24918352698167587,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "212542181A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2448120542433329,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "MAC220229116A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2444152846981351,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00013595-C.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2439944260426758,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "LEVA000031-A.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.24011270681513996,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.2321.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.23754112859715293,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "VIA222614128B.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.22174073078958606,
+          "dim_similarity": null,
+          "combined_score": null
+        }
+      ]
+    },
+    {
+      "input": "701.1828.00.0",
+      "self_rank": 1,
+      "expected_ranks": {
+        "701.1829.00.0": 12,
+        "701.1831.00.0": null
+      },
+      "unwanted_ranks": {
+        "701.2146.00.0": 6,
+        "702.0144.00.0": null,
+        "PF00002831-A": null,
+        "PF00002392": null
+      },
+      "recall@5": 0.0,
+      "recall@10": 0.0,
+      "recall@20": 0.5,
+      "unwanted@5": 0,
+      "unwanted@10": 1,
+      "mrr": 0.08333333333333333,
+      "top10": [
+        "705.0013.00.0.pdf",
+        "31813106A.pdf",
+        "NIG211012159A.pdf",
+        "71514113E.pdf",
+        "233212153A.pdf",
+        "701.2146.00.0.pdf",
+        "93512143A.pdf",
+        "BER511011118A.pdf",
+        "raccord_inox_hexagonale_M8_mandrin_Z6.pdf",
+        "701.2143.00.0.pdf"
+      ],
+      "search_seconds": 23.3,
+      "n_results": 20,
+      "mode": "fusion",
+      "raw": [
+        {
+          "name": "701.1828.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.8585169635781345,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "705.0013.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.5,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "31813106A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.42685577042909434,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "NIG211012159A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.41989306125147186,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "71514113E.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.3936302022073382,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "233212153A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.28715652346305254,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.2146.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.28341730153138023,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "93512143A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2820131855407114,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "BER511011118A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2779055689029574,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "raccord_inox_hexagonale_M8_mandrin_Z6.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.26142063310673397,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.2143.00.0.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.2457444111902566,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "HAM411012178A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.23501786374171446,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.1829.00.0",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.22211231088467362,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "00005-01-007-00.PDF",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.22016355901421586,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "PF00018887-A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.21698621621510938,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "361713113A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.21159834853008117,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.1871.00.1.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.20729274124486885,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "701.1872.00.1.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.19720335953694443,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "BER511012115A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.19017423377783804,
+          "dim_similarity": null,
+          "combined_score": null
+        },
+        {
+          "name": "HAM411012117A.pdf",
+          "uuid": "",
+          "distance": null,
+          "bm25_score": 0.1894237934866375,
+          "dim_similarity": null,
+          "combined_score": null
+        }
+      ]
+    }
+  ]
+}
