@@ -565,6 +565,70 @@ def _escape_inline(text: str) -> str:
     return text.replace("</", "<\\/")
 
 
+_MCP_APPS_HANDSHAKE = """<script>(function(){
+  if (window.parent === window) return;
+  var versions = ["2026-01-26", "2025-11-25"];
+  var attempt = 0;
+  var nextId = 0;
+  var currentId = 0;
+  function fail(message) {
+    console.error("[sinde-widget] handshake MCP Apps non riuscito", message);
+  }
+  function notify() {
+    window.parent.postMessage(
+      { jsonrpc: "2.0", method: "ui/notifications/initialized", params: {} },
+      "*"
+    );
+    console.info("[sinde-widget] MCP Apps inizializzato");
+  }
+  function request() {
+    currentId = ++nextId;
+    window.parent.postMessage({
+      jsonrpc: "2.0",
+      id: currentId,
+      method: "ui/initialize",
+      params: {
+        appInfo: { name: "sinde-widget", version: "1.0.0" },
+        appCapabilities: {},
+        protocolVersion: versions[attempt]
+      }
+    }, "*");
+  }
+  function onMessage(event) {
+    if (event.source !== window.parent) return;
+    var message = event.data;
+    if (!message || message.jsonrpc !== "2.0") return;
+    if (String(message.id) !== String(currentId)) return;
+    if (message.error) {
+      attempt += 1;
+      if (attempt < versions.length) {
+        request();
+        return;
+      }
+      window.removeEventListener("message", onMessage);
+      var detail = message.error && message.error.message;
+      fail(detail || "rifiutato");
+      return;
+    }
+    window.removeEventListener("message", onMessage);
+    notify();
+  }
+  window.addEventListener("message", onMessage);
+  request();
+})();</script>"""
+
+
+def _inject_mcp_apps_handshake(html: str) -> str:
+    """ChatGPT chiude il widget se non riceve ui/notifications/initialized."""
+    if "ui/notifications/initialized" in html:
+        return html
+    match = re.search(r"<body[^>]*>", html, flags=re.IGNORECASE)
+    if not match:
+        return _MCP_APPS_HANDSHAKE + html
+    end = match.end()
+    return html[:end] + _MCP_APPS_HANDSHAKE + html[end:]
+
+
 def _inline_widget_assets(html: str) -> str:
     """Incorpora CSS e JS nell'HTML.
 
@@ -671,6 +735,7 @@ def _load_widget_html() -> str:
             html_content,
             flags=re.IGNORECASE,
         )
+        html_content = _inject_mcp_apps_handshake(html_content)
         print(
             "[widget] html pronto "
             f"bytes={len(html_content)} "
@@ -710,7 +775,7 @@ def _load_widget_html_cached() -> str:
 
 
 # L'URI è la chiave di cache di ChatGPT. Va cambiato quando cambia l'HTML.
-widget_uri = "ui://widget/image-search-v2.html"
+widget_uri = "ui://widget/image-search-v3.html"
 
 
 SINDE_WIDGET = SindeWidget(
