@@ -1,0 +1,939 @@
+{
+  "cases": [
+    {
+      "input": "702.0019.00.0",
+      "query_struct_liquid": {
+        "part_type": "carrucola_puleggia",
+        "shape_class": "tornito",
+        "n_diameters": "3-5",
+        "proportions": "bilanciato",
+        "has_teeth": true,
+        "has_keyway": true,
+        "has_thread": false,
+        "has_through_holes": false
+      },
+      "query_struct_gpt": {
+        "part_type": "canotto_boccola_distanziale",
+        "shape_class": "tornito",
+        "n_diameters": "3-5",
+        "proportions": "allungato",
+        "has_teeth": false,
+        "has_keyway": true,
+        "has_thread": false,
+        "has_through_holes": true
+      },
+      "expected_struct": {
+        "702.0144.00": {
+          "part_type": "canotto_boccola_distanziale",
+          "shape_class": "tornito",
+          "n_diameters": "3-5",
+          "proportions": "bilanciato",
+          "has_teeth": false,
+          "has_keyway": false,
+          "has_thread": false,
+          "has_through_holes": false
+        }
+      },
+      "stabilita": {
+        "free_identiche": 0.2,
+        "free_parole_jaccard": 0.497,
+        "free_prima_frase_uguale": 0.8,
+        "ricerca_top10_jaccard": 0.188,
+        "ricerca_top50_jaccard": 0.468,
+        "liquid_campi_stabili": {
+          "part_type": 1.0,
+          "shape_class": 1.0,
+          "n_diameters": 1.0,
+          "proportions": 1.0,
+          "has_teeth": 1.0,
+          "has_keyway": 1.0,
+          "has_thread": 1.0,
+          "has_through_holes": 1.0
+        },
+        "gpt_campi_stabili": {
+          "part_type": 0.8,
+          "shape_class": 1.0,
+          "n_diameters": 1.0,
+          "proportions": 1.0,
+          "has_teeth": 0.6,
+          "has_keyway": 0.8,
+          "has_thread": 1.0,
+          "has_through_holes": 0.8
+        },
+        "liquid_tutto_identico": 1.0,
+        "gpt_tutto_identico": 0.6
+      },
+      "ricerca_attuale_per_run": [
+        {
+          "r10": 0.0,
+          "r20": 0.0,
+          "ranks": {
+            "702.0144.00": 22
+          }
+        },
+        {
+          "r10": 0.0,
+          "r20": 0.0,
+          "ranks": {
+            "702.0144.00": 31
+          }
+        },
+        {
+          "r10": 0.0,
+          "r20": 1.0,
+          "ranks": {
+            "702.0144.00": 17
+          }
+        },
+        {
+          "r10": 1.0,
+          "r20": 1.0,
+          "ranks": {
+            "702.0144.00": 7
+          }
+        },
+        {
+          "r10": 1.0,
+          "r20": 1.0,
+          "ranks": {
+            "702.0144.00": 3
+          }
+        }
+      ],
+      "strutturata_morbida": {
+        "expected_ranks": {
+          "702.0144.00": 26
+        },
+        "unwanted_ranks": {
+          "SM02013561A": 2041,
+          "PF00011631-B": 1510
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.038461538461538464,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "strutturata_esatta": {
+        "expected_ranks": {
+          "702.0144.00": 260
+        },
+        "unwanted_ranks": {
+          "SM02013561A": 1799,
+          "PF00011631-B": 1755
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.0038461538461538464,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "pareggi_al_primo_posto_esatta": 5,
+      "free_captions": [
+        "Manicotto (boccola) — corpo cilindrico cavo corto con pareti di spessore variabile. Le proporzioni sono bilanciate tra diametro e lunghezza, con lavorazione tor",
+        "Manicotto (boccola) — corpo cilindrico cavo corto con pareti di spessore variabile. Le proporzioni sono bilanciate tra diametro e lunghezza, con lavorazione tor",
+        "Manicotto (boccola) — corpo cilindrico cavo corto con pareti di spessore variabile. Le proporzioni sono bilanciate tra diametro e lunghezza, con lavorazione tor",
+        "Raccordo (nipplo) — corpo tozzo e compatto tornito con cavità passante. Le proporzioni sono bilanciate tra diametro e lunghezza, tipiche di un pezzo tornito com",
+        "Manicotto (boccola) — corpo cilindrico cavo corto con pareti di spessore variabile. Le proporzioni sono bilanciate tra diametro e lunghezza, con lavorazione tor"
+      ]
+    },
+    {
+      "input": "PF00009371",
+      "query_struct_liquid": {
+        "part_type": "pignone_ingranaggio",
+        "shape_class": "tornito",
+        "n_diameters": "oltre_5",
+        "proportions": "bilanciato",
+        "has_teeth": true,
+        "has_keyway": true,
+        "has_thread": true,
+        "has_through_holes": false
+      },
+      "query_struct_gpt": {
+        "part_type": "albero",
+        "shape_class": "tornito",
+        "n_diameters": "3-5",
+        "proportions": "allungato",
+        "has_teeth": true,
+        "has_keyway": true,
+        "has_thread": true,
+        "has_through_holes": false
+      },
+      "expected_struct": {
+        "PF00018845": {
+          "part_type": "pignone_ingranaggio",
+          "shape_class": "tornito",
+          "n_diameters": "3-5",
+          "proportions": "allungato",
+          "has_teeth": true,
+          "has_keyway": false,
+          "has_thread": true,
+          "has_through_holes": false
+        },
+        "PF00005877-A": {
+          "part_type": "pignone_ingranaggio",
+          "shape_class": "tornito",
+          "n_diameters": "oltre_5",
+          "proportions": "bilanciato",
+          "has_teeth": true,
+          "has_keyway": false,
+          "has_thread": false,
+          "has_through_holes": false
+        },
+        "PF00015175": {
+          "part_type": "pignone_ingranaggio",
+          "shape_class": "tornito",
+          "n_diameters": "oltre_5",
+          "proportions": "allungato",
+          "has_teeth": true,
+          "has_keyway": false,
+          "has_thread": true,
+          "has_through_holes": false
+        }
+      },
+      "stabilita": {
+        "free_identiche": 0.2,
+        "free_parole_jaccard": 0.526,
+        "free_prima_frase_uguale": 1.0,
+        "ricerca_top10_jaccard": 0.461,
+        "ricerca_top50_jaccard": 0.527,
+        "liquid_campi_stabili": {
+          "part_type": 1.0,
+          "shape_class": 1.0,
+          "n_diameters": 1.0,
+          "proportions": 0.8,
+          "has_teeth": 1.0,
+          "has_keyway": 1.0,
+          "has_thread": 1.0,
+          "has_through_holes": 1.0
+        },
+        "gpt_campi_stabili": {
+          "part_type": 1.0,
+          "shape_class": 1.0,
+          "n_diameters": 1.0,
+          "proportions": 1.0,
+          "has_teeth": 1.0,
+          "has_keyway": 1.0,
+          "has_thread": 1.0,
+          "has_through_holes": 1.0
+        },
+        "liquid_tutto_identico": 0.8,
+        "gpt_tutto_identico": 1.0
+      },
+      "ricerca_attuale_per_run": [
+        {
+          "r10": 1.0,
+          "r20": 1.0,
+          "ranks": {
+            "PF00018845": 4,
+            "PF00005877-A": 6,
+            "PF00015175": 9
+          }
+        },
+        {
+          "r10": 0.6666666666666666,
+          "r20": 1.0,
+          "ranks": {
+            "PF00018845": 11,
+            "PF00005877-A": 5,
+            "PF00015175": 3
+          }
+        },
+        {
+          "r10": 0.3333333333333333,
+          "r20": 0.3333333333333333,
+          "ranks": {
+            "PF00018845": null,
+            "PF00005877-A": 23,
+            "PF00015175": 3
+          }
+        },
+        {
+          "r10": 1.0,
+          "r20": 1.0,
+          "ranks": {
+            "PF00018845": 2,
+            "PF00005877-A": 5,
+            "PF00015175": 3
+          }
+        },
+        {
+          "r10": 1.0,
+          "r20": 1.0,
+          "ranks": {
+            "PF00018845": 4,
+            "PF00005877-A": 10,
+            "PF00015175": 2
+          }
+        }
+      ],
+      "strutturata_morbida": {
+        "expected_ranks": {
+          "PF00018845": 1,
+          "PF00005877-A": 16,
+          "PF00015175": 3
+        },
+        "unwanted_ranks": {},
+        "recall@5": 0.6666666666666666,
+        "recall@10": 0.6666666666666666,
+        "recall@20": 1.0,
+        "mrr": 1.0,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "strutturata_esatta": {
+        "expected_ranks": {
+          "PF00018845": 40,
+          "PF00005877-A": 20,
+          "PF00015175": 23
+        },
+        "unwanted_ranks": {},
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.3333333333333333,
+        "mrr": 0.05,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "pareggi_al_primo_posto_esatta": 7,
+      "free_captions": [
+        "Albero (shaft) — corpo cilindrico allungato sviluppato in lunghezza. Le proporzioni sono tipiche di un componente tornito con lunghezza superiore al diametro, c",
+        "Albero (shaft) — corpo cilindrico allungato sviluppato in lunghezza. Il pezzo presenta proporzioni con lunghezza superiore al diametro, lavorazione tornita con ",
+        "Albero (shaft) — corpo cilindrico allungato sviluppato in lunghezza. Le proporzioni sono tipiche di un albero tornito con diametro variabile e sviluppo assiale ",
+        "Albero (shaft) — corpo cilindrico allungato sviluppato in lunghezza. Le proporzioni sono tipiche di un albero tornito con diametro inferiore alla lunghezza comp",
+        "Albero (shaft) — corpo cilindrico allungato sviluppato in lunghezza. Le proporzioni sono tipiche di un componente tornito con sviluppo assiale prevalente rispet"
+      ]
+    },
+    {
+      "input": "PF00018620",
+      "query_struct_liquid": {
+        "part_type": "blocchetto",
+        "shape_class": "prismatico",
+        "n_diameters": "3-5",
+        "proportions": "bilanciato",
+        "has_teeth": false,
+        "has_keyway": false,
+        "has_thread": true,
+        "has_through_holes": true
+      },
+      "query_struct_gpt": {
+        "part_type": "blocchetto",
+        "shape_class": "prismatico",
+        "n_diameters": "3-5",
+        "proportions": "bilanciato",
+        "has_teeth": false,
+        "has_keyway": false,
+        "has_thread": true,
+        "has_through_holes": true
+      },
+      "expected_struct": {
+        "704.0256.00.0": {
+          "part_type": "blocchetto",
+          "shape_class": "misto",
+          "n_diameters": "oltre_5",
+          "proportions": "bilanciato",
+          "has_teeth": false,
+          "has_keyway": false,
+          "has_thread": true,
+          "has_through_holes": true
+        }
+      },
+      "stabilita": {
+        "free_identiche": 0.2,
+        "free_parole_jaccard": 0.558,
+        "free_prima_frase_uguale": 1.0,
+        "ricerca_top10_jaccard": 0.189,
+        "ricerca_top50_jaccard": 0.396,
+        "liquid_campi_stabili": {
+          "part_type": 1.0,
+          "shape_class": 1.0,
+          "n_diameters": 1.0,
+          "proportions": 1.0,
+          "has_teeth": 1.0,
+          "has_keyway": 1.0,
+          "has_thread": 1.0,
+          "has_through_holes": 1.0
+        },
+        "gpt_campi_stabili": {
+          "part_type": 1.0,
+          "shape_class": 1.0,
+          "n_diameters": 1.0,
+          "proportions": 1.0,
+          "has_teeth": 1.0,
+          "has_keyway": 1.0,
+          "has_thread": 1.0,
+          "has_through_holes": 1.0
+        },
+        "liquid_tutto_identico": 1.0,
+        "gpt_tutto_identico": 1.0
+      },
+      "ricerca_attuale_per_run": [
+        {
+          "r10": 0.0,
+          "r20": 0.0,
+          "ranks": {
+            "704.0256.00.0": null
+          }
+        },
+        {
+          "r10": 1.0,
+          "r20": 1.0,
+          "ranks": {
+            "704.0256.00.0": 4
+          }
+        },
+        {
+          "r10": 0.0,
+          "r20": 0.0,
+          "ranks": {
+            "704.0256.00.0": 45
+          }
+        },
+        {
+          "r10": 0.0,
+          "r20": 0.0,
+          "ranks": {
+            "704.0256.00.0": 43
+          }
+        },
+        {
+          "r10": 1.0,
+          "r20": 1.0,
+          "ranks": {
+            "704.0256.00.0": 5
+          }
+        }
+      ],
+      "strutturata_morbida": {
+        "expected_ranks": {
+          "704.0256.00.0": 167
+        },
+        "unwanted_ranks": {
+          "702.0124.00.0": 1895,
+          "702.0144.00.0": 1846,
+          "701.1829.00.0": 1168
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.005988023952095809,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "strutturata_esatta": {
+        "expected_ranks": {
+          "704.0256.00.0": 368
+        },
+        "unwanted_ranks": {
+          "702.0124.00.0": 2848,
+          "702.0144.00.0": 1738,
+          "701.1829.00.0": 2404
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.002717391304347826,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "pareggi_al_primo_posto_esatta": 44,
+      "free_captions": [
+        "Blocco (corpo supporto/housing) — solido massiccio fresato dal pieno con sviluppo equilibrato tra altezza e larghezza. Il pezzo ha forma cubica con spigoli smus",
+        "Blocco (corpo supporto/housing) — solido massiccio fresato dal pieno con sviluppo equilibrato tra altezza e larghezza. Il pezzo presenta forma cubica con spigol",
+        "Blocco (corpo supporto/housing) — solido massiccio fresato dal pieno con sviluppo equilibrato tra altezza e larghezza. Il pezzo presenta forma cubica con spigol",
+        "Blocco (corpo supporto/housing) — solido massiccio fresato dal pieno con sviluppo equilibrato tra altezza e larghezza. Il pezzo ha forma cubica con spigoli smus",
+        "Blocco (corpo supporto/housing) — solido massiccio fresato dal pieno con sviluppo equilibrato tra altezza e larghezza. Il pezzo presenta forma cubica con spigol"
+      ]
+    },
+    {
+      "input": "701.2425.00.0",
+      "query_struct_liquid": {
+        "part_type": "staffa_supporto",
+        "shape_class": "lamiera",
+        "n_diameters": "3-5",
+        "proportions": "bilanciato",
+        "has_teeth": false,
+        "has_keyway": false,
+        "has_thread": true,
+        "has_through_holes": true
+      },
+      "query_struct_gpt": {
+        "part_type": "staffa_supporto",
+        "shape_class": "prismatico",
+        "n_diameters": "nessuno",
+        "proportions": "bilanciato",
+        "has_teeth": false,
+        "has_keyway": false,
+        "has_thread": true,
+        "has_through_holes": true
+      },
+      "expected_struct": {
+        "701.2320.00.0": {
+          "part_type": "staffa_supporto",
+          "shape_class": "prismatico",
+          "n_diameters": "3-5",
+          "proportions": "bilanciato",
+          "has_teeth": false,
+          "has_keyway": false,
+          "has_thread": false,
+          "has_through_holes": true
+        },
+        "701.2332.00.0": {
+          "part_type": "staffa_supporto",
+          "shape_class": "lamiera",
+          "n_diameters": "nessuno",
+          "proportions": "piatto",
+          "has_teeth": false,
+          "has_keyway": false,
+          "has_thread": true,
+          "has_through_holes": true
+        }
+      },
+      "stabilita": {
+        "free_identiche": 0.2,
+        "free_parole_jaccard": 0.652,
+        "free_prima_frase_uguale": 1.0,
+        "ricerca_top10_jaccard": 0.395,
+        "ricerca_top50_jaccard": 0.676,
+        "liquid_campi_stabili": {
+          "part_type": 1.0,
+          "shape_class": 1.0,
+          "n_diameters": 1.0,
+          "proportions": 1.0,
+          "has_teeth": 1.0,
+          "has_keyway": 1.0,
+          "has_thread": 1.0,
+          "has_through_holes": 1.0
+        },
+        "gpt_campi_stabili": {
+          "part_type": 1.0,
+          "shape_class": 1.0,
+          "n_diameters": 1.0,
+          "proportions": 1.0,
+          "has_teeth": 1.0,
+          "has_keyway": 1.0,
+          "has_thread": 1.0,
+          "has_through_holes": 1.0
+        },
+        "liquid_tutto_identico": 1.0,
+        "gpt_tutto_identico": 1.0
+      },
+      "ricerca_attuale_per_run": [
+        {
+          "r10": 0.5,
+          "r20": 0.5,
+          "ranks": {
+            "701.2320.00.0": 41,
+            "701.2332.00.0": 1
+          }
+        },
+        {
+          "r10": 0.0,
+          "r20": 0.0,
+          "ranks": {
+            "701.2320.00.0": null,
+            "701.2332.00.0": 43
+          }
+        },
+        {
+          "r10": 0.0,
+          "r20": 0.0,
+          "ranks": {
+            "701.2320.00.0": null,
+            "701.2332.00.0": 26
+          }
+        },
+        {
+          "r10": 0.5,
+          "r20": 0.5,
+          "ranks": {
+            "701.2320.00.0": 41,
+            "701.2332.00.0": 1
+          }
+        },
+        {
+          "r10": 0.5,
+          "r20": 0.5,
+          "ranks": {
+            "701.2320.00.0": null,
+            "701.2332.00.0": 1
+          }
+        }
+      ],
+      "strutturata_morbida": {
+        "expected_ranks": {
+          "701.2320.00.0": 621,
+          "701.2332.00.0": 16
+        },
+        "unwanted_ranks": {
+          "PF00004573": 127,
+          "PF00017257": 836,
+          "701.2146.00.0": 1609
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.5,
+        "mrr": 0.0625,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "strutturata_esatta": {
+        "expected_ranks": {
+          "701.2320.00.0": 150,
+          "701.2332.00.0": 72
+        },
+        "unwanted_ranks": {
+          "PF00004573": 353,
+          "PF00017257": 358,
+          "701.2146.00.0": 1639
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.013888888888888888,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "pareggi_al_primo_posto_esatta": 3,
+      "free_captions": [
+        "Staffa (supporto) — piastra sagomata con bracci e fori di fissaggio. Le proporzioni sono squadrate con sviluppo prevalente in altezza e larghezza, realizzata tr",
+        "Staffa (supporto) — piastra sagomata con bracci e fori di fissaggio. Le proporzioni sono squadrate con sviluppo prevalente in altezza e larghezza, realizzata tr",
+        "Staffa (supporto) — piastra sagomata con bracci e fori di fissaggio. Le proporzioni sono squadrate con sviluppo prevalente in altezza e larghezza, realizzata tr",
+        "Staffa (supporto) — piastra sagomata con bracci e fori di fissaggio. Le proporzioni sono bilanciate con sviluppo prevalente in altezza e larghezza, realizzata t",
+        "Staffa (supporto) — piastra sagomata con bracci e fori di fissaggio. Le proporzioni sono squadrate con sviluppo prevalente in altezza e larghezza, realizzata tr"
+      ]
+    },
+    {
+      "input": "PF00016814",
+      "query_struct_liquid": {
+        "part_type": "staffa_supporto",
+        "shape_class": "misto",
+        "n_diameters": "oltre_5",
+        "proportions": "bilanciato",
+        "has_teeth": false,
+        "has_keyway": false,
+        "has_thread": true,
+        "has_through_holes": true
+      },
+      "query_struct_gpt": {
+        "part_type": "staffa_supporto",
+        "shape_class": "misto",
+        "n_diameters": "3-5",
+        "proportions": "allungato",
+        "has_teeth": false,
+        "has_keyway": true,
+        "has_thread": true,
+        "has_through_holes": true
+      },
+      "expected_struct": {
+        "PF00013561": {
+          "part_type": "albero",
+          "shape_class": "misto",
+          "n_diameters": "oltre_5",
+          "proportions": "allungato",
+          "has_teeth": false,
+          "has_keyway": true,
+          "has_thread": true,
+          "has_through_holes": true
+        },
+        "PF00017176-A": {
+          "part_type": "albero",
+          "shape_class": "tornito",
+          "n_diameters": "oltre_5",
+          "proportions": "allungato",
+          "has_teeth": false,
+          "has_keyway": false,
+          "has_thread": true,
+          "has_through_holes": true
+        }
+      },
+      "stabilita": {
+        "free_identiche": 0.2,
+        "free_parole_jaccard": 0.655,
+        "free_prima_frase_uguale": 1.0,
+        "ricerca_top10_jaccard": 0.261,
+        "ricerca_top50_jaccard": 0.553,
+        "liquid_campi_stabili": {
+          "part_type": 1.0,
+          "shape_class": 0.6,
+          "n_diameters": 1.0,
+          "proportions": 1.0,
+          "has_teeth": 1.0,
+          "has_keyway": 1.0,
+          "has_thread": 1.0,
+          "has_through_holes": 1.0
+        },
+        "gpt_campi_stabili": {
+          "part_type": 1.0,
+          "shape_class": 1.0,
+          "n_diameters": 1.0,
+          "proportions": 1.0,
+          "has_teeth": 1.0,
+          "has_keyway": 1.0,
+          "has_thread": 1.0,
+          "has_through_holes": 1.0
+        },
+        "liquid_tutto_identico": 0.6,
+        "gpt_tutto_identico": 1.0
+      },
+      "ricerca_attuale_per_run": [
+        {
+          "r10": 0.5,
+          "r20": 1.0,
+          "ranks": {
+            "PF00013561": 1,
+            "PF00017176-A": 14
+          }
+        },
+        {
+          "r10": 0.0,
+          "r20": 0.5,
+          "ranks": {
+            "PF00013561": 19,
+            "PF00017176-A": 25
+          }
+        },
+        {
+          "r10": 0.5,
+          "r20": 1.0,
+          "ranks": {
+            "PF00013561": 1,
+            "PF00017176-A": 16
+          }
+        },
+        {
+          "r10": 0.5,
+          "r20": 0.5,
+          "ranks": {
+            "PF00013561": 2,
+            "PF00017176-A": 21
+          }
+        },
+        {
+          "r10": 0.0,
+          "r20": 0.5,
+          "ranks": {
+            "PF00013561": 16,
+            "PF00017176-A": 23
+          }
+        }
+      ],
+      "strutturata_morbida": {
+        "expected_ranks": {
+          "PF00013561": 255,
+          "PF00017176-A": 381
+        },
+        "unwanted_ranks": {
+          "PF00001092-E": 435
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.00392156862745098,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "strutturata_esatta": {
+        "expected_ranks": {
+          "PF00013561": 344,
+          "PF00017176-A": 692
+        },
+        "unwanted_ranks": {
+          "PF00001092-E": 671
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.0029069767441860465,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "pareggi_al_primo_posto_esatta": 5,
+      "free_captions": [
+        "Staffa (supporto) — piastra sagomata con bracci e fori di fissaggio. Le proporzioni sono bilanciate con sviluppo prevalente in lunghezza e larghezza, realizzata",
+        "Staffa (supporto) — piastra sagomata con bracci e fori di fissaggio. Le proporzioni sono bilanciate con sviluppo prevalente in larghezza e spessore medio, reali",
+        "Staffa (supporto) — piastra sagomata con bracci e fori di fissaggio. Le proporzioni sono bilanciate con sviluppo prevalente in lunghezza e larghezza, realizzata",
+        "Staffa (supporto) — piastra sagomata con bracci e fori di fissaggio. Il pezzo presenta proporzioni bilanciate con sviluppo prevalente in lunghezza e larghezza, ",
+        "Staffa (supporto) — piastra sagomata con bracci e fori di fissaggio. Le proporzioni sono bilanciate con sviluppo prevalente in lunghezza e larghezza, realizzata"
+      ]
+    },
+    {
+      "input": "701.1828.00.0",
+      "query_struct_liquid": {
+        "part_type": "flangia_disco",
+        "shape_class": "tornito",
+        "n_diameters": "oltre_5",
+        "proportions": "bilanciato",
+        "has_teeth": false,
+        "has_keyway": false,
+        "has_thread": true,
+        "has_through_holes": false
+      },
+      "query_struct_gpt": {
+        "part_type": "nipplo_raccordo",
+        "shape_class": "tornito",
+        "n_diameters": "3-5",
+        "proportions": "bilanciato",
+        "has_teeth": false,
+        "has_keyway": false,
+        "has_thread": true,
+        "has_through_holes": false
+      },
+      "expected_struct": {
+        "701.1829.00.0": {
+          "part_type": "nipplo_raccordo",
+          "shape_class": "tornito",
+          "n_diameters": "oltre_5",
+          "proportions": "bilanciato",
+          "has_teeth": false,
+          "has_keyway": false,
+          "has_thread": false,
+          "has_through_holes": false
+        },
+        "701.1831.00.0": {
+          "part_type": "nipplo_raccordo",
+          "shape_class": "tornito",
+          "n_diameters": "3-5",
+          "proportions": "bilanciato",
+          "has_teeth": false,
+          "has_keyway": false,
+          "has_thread": false,
+          "has_through_holes": false
+        }
+      },
+      "stabilita": {
+        "free_identiche": 0.2,
+        "free_parole_jaccard": 0.719,
+        "free_prima_frase_uguale": 1.0,
+        "ricerca_top10_jaccard": 0.694,
+        "ricerca_top50_jaccard": 0.712,
+        "liquid_campi_stabili": {
+          "part_type": 0.6,
+          "shape_class": 1.0,
+          "n_diameters": 1.0,
+          "proportions": 1.0,
+          "has_teeth": 1.0,
+          "has_keyway": 1.0,
+          "has_thread": 1.0,
+          "has_through_holes": 1.0
+        },
+        "gpt_campi_stabili": {
+          "part_type": 1.0,
+          "shape_class": 1.0,
+          "n_diameters": 1.0,
+          "proportions": 1.0,
+          "has_teeth": 1.0,
+          "has_keyway": 1.0,
+          "has_thread": 1.0,
+          "has_through_holes": 1.0
+        },
+        "liquid_tutto_identico": 0.6,
+        "gpt_tutto_identico": 1.0
+      },
+      "ricerca_attuale_per_run": [
+        {
+          "r10": 0.5,
+          "r20": 1.0,
+          "ranks": {
+            "701.1829.00.0": 4,
+            "701.1831.00.0": 11
+          }
+        },
+        {
+          "r10": 0.5,
+          "r20": 1.0,
+          "ranks": {
+            "701.1829.00.0": 7,
+            "701.1831.00.0": 14
+          }
+        },
+        {
+          "r10": 0.5,
+          "r20": 1.0,
+          "ranks": {
+            "701.1829.00.0": 5,
+            "701.1831.00.0": 12
+          }
+        },
+        {
+          "r10": 1.0,
+          "r20": 1.0,
+          "ranks": {
+            "701.1829.00.0": 2,
+            "701.1831.00.0": 9
+          }
+        },
+        {
+          "r10": 1.0,
+          "r20": 1.0,
+          "ranks": {
+            "701.1829.00.0": 4,
+            "701.1831.00.0": 10
+          }
+        }
+      ],
+      "strutturata_morbida": {
+        "expected_ranks": {
+          "701.1829.00.0": 78,
+          "701.1831.00.0": 130
+        },
+        "unwanted_ranks": {
+          "701.2146.00.0": 12,
+          "702.0144.00.0": 324,
+          "PF00002831-A": 464,
+          "PF00002392": 1031
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.01282051282051282,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "strutturata_esatta": {
+        "expected_ranks": {
+          "701.1829.00.0": 465,
+          "701.1831.00.0": 1048
+        },
+        "unwanted_ranks": {
+          "701.2146.00.0": 1055,
+          "702.0144.00.0": 1062,
+          "PF00002831-A": 1085,
+          "PF00002392": 1082
+        },
+        "recall@5": 0.0,
+        "recall@10": 0.0,
+        "recall@20": 0.0,
+        "mrr": 0.002150537634408602,
+        "unwanted@5": 0,
+        "unwanted@10": 0
+      },
+      "pareggi_al_primo_posto_esatta": 4,
+      "free_captions": [
+        "Raccordo (nipplo) — corpo tozzo e compatto tornito con cavità passante. Le proporzioni sono bilanciate tra diametro e lunghezza, tipiche di un pezzo tornito com",
+        "Raccordo (nipplo) — corpo tozzo e compatto tornito con cavità passante. Le proporzioni sono bilanciate tra diametro e lunghezza, tipiche di un pezzo tornito dal",
+        "Raccordo (nipplo) — corpo tozzo e compatto tornito con cavità passante. Le proporzioni sono bilanciate tra diametro e lunghezza, tipiche di un pezzo tornito com",
+        "Raccordo (nipplo) — corpo tozzo e compatto tornito con cavità passante. Le proporzioni sono bilanciate tra diametro e lunghezza, tipiche di un pezzo tornito com",
+        "Raccordo (nipplo) — corpo tozzo e compatto tornito con cavità passante. Le proporzioni sono bilanciate tra diametro e lunghezza, tipiche di un pezzo tornito com"
+      ]
+    }
+  ],
+  "summary": {
+    "free_identiche": 0.2,
+    "free_parole_jaccard": 0.601,
+    "ricerca_top10_jaccard": 0.365,
+    "ricerca_top50_jaccard": 0.555,
+    "liquid_tutto_identico": 0.833,
+    "gpt_tutto_identico": 0.933,
+    "ricerca_r10_media": 0.483,
+    "ricerca_r10_min": 0.139,
+    "ricerca_r10_max": 0.833,
+    "ricerca_r20_media": 0.644,
+    "strutt_morbida_r10": 0.111,
+    "strutt_morbida_r20": 0.25,
+    "strutt_esatta_r10": 0.0,
+    "strutt_esatta_r20": 0.056
+  }
+}
