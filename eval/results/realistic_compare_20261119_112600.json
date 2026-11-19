@@ -1,0 +1,508 @@
+{
+  "cases": [
+    {
+      "input": "702.0019.00.0",
+      "pool_size": 100,
+      "family_recognized": "puleggia_rullo",
+      "family_archive": "albero",
+      "class_size": 108,
+      "judged_pairs": {
+        "0_ricerca_50": 49,
+        "1_ricerca50+giudice": 49,
+        "2_ricerca100+giudice": 96,
+        "3_ricerca50+famiglia+giudice": 154
+      },
+      "variants": {
+        "0_ricerca_50": {
+          "expected_ranks": {
+            "702.0144.00": 22
+          },
+          "unwanted_ranks": {
+            "SM02013561A": null,
+            "PF00011631-B": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.045454545454545456,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "1_ricerca50+giudice": {
+          "expected_ranks": {
+            "702.0144.00": 1
+          },
+          "unwanted_ranks": {
+            "SM02013561A": null,
+            "PF00011631-B": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 1.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "2_ricerca100+giudice": {
+          "expected_ranks": {
+            "702.0144.00": 1
+          },
+          "unwanted_ranks": {
+            "SM02013561A": null,
+            "PF00011631-B": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 1.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "3_ricerca50+famiglia+giudice": {
+          "expected_ranks": {
+            "702.0144.00": 1
+          },
+          "unwanted_ranks": {
+            "SM02013561A": null,
+            "PF00011631-B": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 1.0,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        }
+      }
+    },
+    {
+      "input": "PF00009371",
+      "pool_size": 95,
+      "family_recognized": "ingranaggio_camma",
+      "family_archive": "ingranaggio_camma",
+      "class_size": 36,
+      "judged_pairs": {
+        "0_ricerca_50": 49,
+        "1_ricerca50+giudice": 49,
+        "2_ricerca100+giudice": 94,
+        "3_ricerca50+famiglia+giudice": 75
+      },
+      "variants": {
+        "0_ricerca_50": {
+          "expected_ranks": {
+            "PF00018845": 21,
+            "PF00005877-A": null,
+            "PF00015175": 2
+          },
+          "unwanted_ranks": {},
+          "recall@5": 0.3333333333333333,
+          "recall@10": 0.3333333333333333,
+          "recall@20": 0.3333333333333333,
+          "mrr": 0.5,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "1_ricerca50+giudice": {
+          "expected_ranks": {
+            "PF00018845": 2,
+            "PF00005877-A": null,
+            "PF00015175": 3
+          },
+          "unwanted_ranks": {},
+          "recall@5": 0.6666666666666666,
+          "recall@10": 0.6666666666666666,
+          "recall@20": 0.6666666666666666,
+          "mrr": 0.5,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "2_ricerca100+giudice": {
+          "expected_ranks": {
+            "PF00018845": 2,
+            "PF00005877-A": null,
+            "PF00015175": 3
+          },
+          "unwanted_ranks": {},
+          "recall@5": 0.6666666666666666,
+          "recall@10": 0.6666666666666666,
+          "recall@20": 0.6666666666666666,
+          "mrr": 0.5,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "3_ricerca50+famiglia+giudice": {
+          "expected_ranks": {
+            "PF00018845": 2,
+            "PF00005877-A": 6,
+            "PF00015175": 3
+          },
+          "unwanted_ranks": {},
+          "recall@5": 0.6666666666666666,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.5,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        }
+      }
+    },
+    {
+      "input": "PF00018620",
+      "pool_size": 96,
+      "family_recognized": "blocchetto_corpo",
+      "family_archive": "blocchetto_corpo",
+      "class_size": 247,
+      "judged_pairs": {
+        "0_ricerca_50": 49,
+        "1_ricerca50+giudice": 49,
+        "2_ricerca100+giudice": 92,
+        "3_ricerca50+famiglia+giudice": 278
+      },
+      "variants": {
+        "0_ricerca_50": {
+          "expected_ranks": {
+            "704.0256.00.0": 35
+          },
+          "unwanted_ranks": {
+            "702.0124.00.0": null,
+            "702.0144.00.0": null,
+            "701.1829.00.0": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.0,
+          "mrr": 0.02857142857142857,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "1_ricerca50+giudice": {
+          "expected_ranks": {
+            "704.0256.00.0": 3
+          },
+          "unwanted_ranks": {
+            "702.0124.00.0": null,
+            "702.0144.00.0": null,
+            "701.1829.00.0": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.3333333333333333,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "2_ricerca100+giudice": {
+          "expected_ranks": {
+            "704.0256.00.0": 3
+          },
+          "unwanted_ranks": {
+            "702.0124.00.0": null,
+            "702.0144.00.0": null,
+            "701.1829.00.0": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.3333333333333333,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "3_ricerca50+famiglia+giudice": {
+          "expected_ranks": {
+            "704.0256.00.0": 4
+          },
+          "unwanted_ranks": {
+            "702.0124.00.0": null,
+            "702.0144.00.0": null,
+            "701.1829.00.0": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.25,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        }
+      }
+    },
+    {
+      "input": "701.2425.00.0",
+      "pool_size": 98,
+      "family_recognized": "supporto_staffa",
+      "family_archive": "supporto_staffa",
+      "class_size": 217,
+      "judged_pairs": {
+        "0_ricerca_50": 48,
+        "1_ricerca50+giudice": 48,
+        "2_ricerca100+giudice": 94,
+        "3_ricerca50+famiglia+giudice": 245
+      },
+      "variants": {
+        "0_ricerca_50": {
+          "expected_ranks": {
+            "701.2320.00.0": 9,
+            "701.2332.00.0": 2
+          },
+          "unwanted_ranks": {
+            "PF00004573": null,
+            "PF00017257": null,
+            "701.2146.00.0": null
+          },
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.5,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "1_ricerca50+giudice": {
+          "expected_ranks": {
+            "701.2320.00.0": 3,
+            "701.2332.00.0": 5
+          },
+          "unwanted_ranks": {
+            "PF00004573": null,
+            "PF00017257": null,
+            "701.2146.00.0": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.3333333333333333,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "2_ricerca100+giudice": {
+          "expected_ranks": {
+            "701.2320.00.0": 3,
+            "701.2332.00.0": 5
+          },
+          "unwanted_ranks": {
+            "PF00004573": null,
+            "PF00017257": null,
+            "701.2146.00.0": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.3333333333333333,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "3_ricerca50+famiglia+giudice": {
+          "expected_ranks": {
+            "701.2320.00.0": 3,
+            "701.2332.00.0": 5
+          },
+          "unwanted_ranks": {
+            "PF00004573": 127,
+            "PF00017257": null,
+            "701.2146.00.0": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.3333333333333333,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        }
+      }
+    },
+    {
+      "input": "PF00016814",
+      "pool_size": 97,
+      "family_recognized": "leva",
+      "family_archive": "supporto_staffa",
+      "class_size": 54,
+      "judged_pairs": {
+        "0_ricerca_50": 48,
+        "1_ricerca50+giudice": 48,
+        "2_ricerca100+giudice": 94,
+        "3_ricerca50+famiglia+giudice": 98
+      },
+      "variants": {
+        "0_ricerca_50": {
+          "expected_ranks": {
+            "PF00013561": 12,
+            "PF00017176-A": 28
+          },
+          "unwanted_ranks": {
+            "PF00001092-E": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.5,
+          "mrr": 0.08333333333333333,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "1_ricerca50+giudice": {
+          "expected_ranks": {
+            "PF00013561": 11,
+            "PF00017176-A": 13
+          },
+          "unwanted_ranks": {
+            "PF00001092-E": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 1.0,
+          "mrr": 0.09090909090909091,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "2_ricerca100+giudice": {
+          "expected_ranks": {
+            "PF00013561": 20,
+            "PF00017176-A": 22
+          },
+          "unwanted_ranks": {
+            "PF00001092-E": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.5,
+          "mrr": 0.05,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "3_ricerca50+famiglia+giudice": {
+          "expected_ranks": {
+            "PF00013561": 18,
+            "PF00017176-A": 21
+          },
+          "unwanted_ranks": {
+            "PF00001092-E": null
+          },
+          "recall@5": 0.0,
+          "recall@10": 0.0,
+          "recall@20": 0.5,
+          "mrr": 0.05555555555555555,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        }
+      }
+    },
+    {
+      "input": "701.1828.00.0",
+      "pool_size": 97,
+      "family_recognized": "coperchio_tappo",
+      "family_archive": "nipplo_raccordo",
+      "class_size": 43,
+      "judged_pairs": {
+        "0_ricerca_50": 48,
+        "1_ricerca50+giudice": 48,
+        "2_ricerca100+giudice": 93,
+        "3_ricerca50+famiglia+giudice": 90
+      },
+      "variants": {
+        "0_ricerca_50": {
+          "expected_ranks": {
+            "701.1829.00.0": 2,
+            "701.1831.00.0": 10
+          },
+          "unwanted_ranks": {
+            "701.2146.00.0": 19,
+            "702.0144.00.0": null,
+            "PF00002831-A": null,
+            "PF00002392": null
+          },
+          "recall@5": 0.5,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 0.5,
+          "unwanted@5": 0,
+          "unwanted@10": 0
+        },
+        "1_ricerca50+giudice": {
+          "expected_ranks": {
+            "701.1829.00.0": 1,
+            "701.1831.00.0": 2
+          },
+          "unwanted_ranks": {
+            "701.2146.00.0": 9,
+            "702.0144.00.0": null,
+            "PF00002831-A": null,
+            "PF00002392": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 1.0,
+          "unwanted@5": 0,
+          "unwanted@10": 1
+        },
+        "2_ricerca100+giudice": {
+          "expected_ranks": {
+            "701.1829.00.0": 1,
+            "701.1831.00.0": 2
+          },
+          "unwanted_ranks": {
+            "701.2146.00.0": 10,
+            "702.0144.00.0": null,
+            "PF00002831-A": null,
+            "PF00002392": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 1.0,
+          "unwanted@5": 0,
+          "unwanted@10": 1
+        },
+        "3_ricerca50+famiglia+giudice": {
+          "expected_ranks": {
+            "701.1829.00.0": 1,
+            "701.1831.00.0": 2
+          },
+          "unwanted_ranks": {
+            "701.2146.00.0": 10,
+            "702.0144.00.0": null,
+            "PF00002831-A": null,
+            "PF00002392": null
+          },
+          "recall@5": 1.0,
+          "recall@10": 1.0,
+          "recall@20": 1.0,
+          "mrr": 1.0,
+          "unwanted@5": 0,
+          "unwanted@10": 1
+        }
+      }
+    }
+  ],
+  "summary": {
+    "0_ricerca_50": {
+      "recall@5": 0.222,
+      "recall@10": 0.389,
+      "recall@20": 0.472,
+      "mrr": 0.276,
+      "unwanted@10": 0,
+      "coppie_medie": 48
+    },
+    "1_ricerca50+giudice": {
+      "recall@5": 0.778,
+      "recall@10": 0.778,
+      "recall@20": 0.944,
+      "mrr": 0.543,
+      "unwanted@10": 1,
+      "coppie_medie": 48
+    },
+    "2_ricerca100+giudice": {
+      "recall@5": 0.778,
+      "recall@10": 0.778,
+      "recall@20": 0.861,
+      "mrr": 0.536,
+      "unwanted@10": 1,
+      "coppie_medie": 94
+    },
+    "3_ricerca50+famiglia+giudice": {
+      "recall@5": 0.778,
+      "recall@10": 0.833,
+      "recall@20": 0.917,
+      "mrr": 0.523,
+      "unwanted@10": 1,
+      "coppie_medie": 157
+    }
+  }
+}
