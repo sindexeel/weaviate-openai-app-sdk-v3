@@ -167,7 +167,9 @@ def load_rows() -> List[Dict[str, Any]]:
         if pref_fam:
             final, src, conf = pref_fam, "prefisso", 1.0
         else:
-            final, src, conf = liq.get("family"), "Liquid", liq.get("confidence")
+            top = (liq.get("top2") or [[None, None]])[0]
+            # probabilità della famiglia scelta (stessa scala dell'alternativa nel CSV)
+            final, src, conf = liq.get("family"), "Liquid", top[1]
         rows.append({**it, "liquid": liq.get("family"), "liquid_conf": liq.get("confidence"),
                      "liquid_top2": liq.get("top2"), "prefix_family": pref_fam,
                      "family": final, "family_source": src, "family_conf": conf})
@@ -213,8 +215,10 @@ def cmd_report(args) -> int:
         w.writerow(["codice", "file", "cartella", "famiglia_proposta", "fonte", "confidenza", "alternativa", "famiglia_corretta_cliente", "note_cliente"])
         for r in sorted(rows, key=lambda r: (r["family"], r["key"])):
             alt = ""
-            if r["family_source"] == "Liquid" and r["liquid_top2"] and len(r["liquid_top2"]) > 1:
-                alt = f"{r['liquid_top2'][1][0]} ({(r['liquid_top2'][1][1] or 0):.2f})"
+            if r["family_source"] == "Liquid" and r["liquid_top2"]:
+                others = [(k, p) for k, p in r["liquid_top2"] if k != r["family"]]
+                if others:
+                    alt = f"{others[0][0]} ({(others[0][1] or 0):.2f})"
             w.writerow([r["key"], r["file"], r["source"], r["family"], r["family_source"],
                         f"{(r['family_conf'] or 0):.2f}", alt, "", ""])
     print(f"CSV: {csv_path}")
