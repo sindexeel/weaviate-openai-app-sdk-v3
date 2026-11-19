@@ -568,13 +568,19 @@ def _escape_inline(text: str) -> str:
 _MCP_APPS_HANDSHAKE = """<script>(function(){
   if (window.parent === window) return;
   var versions = ["2026-01-26", "2025-11-25"];
-  var attempt = 0;
+  var versionIndex = 0;
   var nextId = 0;
-  var currentId = 0;
-  function fail(message) {
-    console.error("[sinde-widget] handshake MCP Apps non riuscito", message);
+  var done = false;
+  var pending = {};
+  var timers = [];
+  function clearTimers() {
+    for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+    timers = [];
   }
   function notify() {
+    if (done) return;
+    done = true;
+    clearTimers();
     window.parent.postMessage(
       { jsonrpc: "2.0", method: "ui/notifications/initialized", params: {} },
       "*"
@@ -582,39 +588,42 @@ _MCP_APPS_HANDSHAKE = """<script>(function(){
     console.info("[sinde-widget] MCP Apps inizializzato");
   }
   function request() {
-    currentId = ++nextId;
+    if (done) return;
+    var id = ++nextId;
+    pending[String(id)] = true;
     window.parent.postMessage({
       jsonrpc: "2.0",
-      id: currentId,
+      id: id,
       method: "ui/initialize",
       params: {
+        protocolVersion: versions[versionIndex % versions.length],
         appInfo: { name: "sinde-widget", version: "1.0.0" },
-        appCapabilities: {},
-        protocolVersion: versions[attempt]
+        appCapabilities: { availableDisplayModes: ["inline"] }
       }
     }, "*");
   }
-  function onMessage(event) {
-    if (event.source !== window.parent) return;
+  window.addEventListener("message", function (event) {
+    if (done || event.source !== window.parent) return;
     var message = event.data;
+    if (typeof message === "string") {
+      try { message = JSON.parse(message); } catch (e) { return; }
+    }
     if (!message || message.jsonrpc !== "2.0") return;
-    if (String(message.id) !== String(currentId)) return;
+    if (message.id == null || !pending[String(message.id)]) return;
     if (message.error) {
-      attempt += 1;
-      if (attempt < versions.length) {
-        request();
-        return;
-      }
-      window.removeEventListener("message", onMessage);
-      var detail = message.error && message.error.message;
-      fail(detail || "rifiutato");
+      versionIndex += 1;
+      console.error(
+        "[sinde-widget] ui/initialize rifiutato",
+        (message.error && message.error.message) || "rifiutato"
+      );
       return;
     }
-    window.removeEventListener("message", onMessage);
     notify();
-  }
-  window.addEventListener("message", onMessage);
+  });
   request();
+  [100, 300, 700, 1500, 3000].forEach(function (delay) {
+    timers.push(setTimeout(request, delay));
+  });
 })();</script>"""
 
 
@@ -775,7 +784,7 @@ def _load_widget_html_cached() -> str:
 
 
 # L'URI è la chiave di cache di ChatGPT. Va cambiato quando cambia l'HTML.
-widget_uri = "ui://widget/image-search-v3.html"
+widget_uri = "ui://widget/image-search-v4.html"
 
 
 SINDE_WIDGET = SindeWidget(
