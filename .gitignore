@@ -1,0 +1,8 @@
+# Bytecode Python generato in locale
+__pycache__/
+*.py[cod]
+
+# Ambienti virtuali e chiavi locali
+.venv/
+venv/
+.env
