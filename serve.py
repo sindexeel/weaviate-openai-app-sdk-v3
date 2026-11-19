@@ -2210,6 +2210,131 @@ _FUSION_PIN_SELF = os.environ.get("FUSION_PIN_SELF", "1").lower() in ("1", "true
 # Proprietà richieste sul pool caption: niente image_b64 (limite gRPC 100 MB).
 _FUSION_POOL_PROPS = ["source_pdf", "caption"]
 
+# ---------------------------------------------------------------------------
+# Riordino con giudice visivo Liquid (decision model d1.2-ultra)
+# ---------------------------------------------------------------------------
+# Dopo la fusion, i primi LIQUID_RERANK_POOL candidati vengono confrontati a
+# coppie con il disegno caricato e riordinati per probabilità di "simile".
+# Spento di default: si accende con LIQUID_RERANK=1 e LIQUID_API_KEY.
+# Qualsiasi errore lascia l'ordine della fusion.
+_LIQUID_RERANK = os.environ.get("LIQUID_RERANK", "0").lower() in ("1", "true", "yes")
+_LIQUID_API_URL = os.environ.get("LIQUID_API_URL", "https://api.liquid.ai/decisions/v1/systemone")
+_LIQUID_MODEL = os.environ.get("LIQUID_MODEL", "d1.2-ultra")
+_LIQUID_RERANK_POOL = int(os.environ.get("LIQUID_RERANK_POOL", "50"))
+_LIQUID_WORKERS = int(os.environ.get("LIQUID_WORKERS", "16"))
+_LIQUID_TIMEOUT = float(os.environ.get("LIQUID_TIMEOUT", "60"))
+# Candidati con P(simile) sotto soglia vengono nascosti (0 = mostra tutti).
+_LIQUID_MIN_P = float(os.environ.get("LIQUID_MIN_P", "0"))
+_LIQUID_MAX_SIDE = 1600
+
+_LIQUID_STATE = (
+    "Due disegni tecnici di componenti meccanici. "
+    "Immagine 1 = disegno di riferimento. Immagine 2 = disegno candidato. "
+    "Valuta solo la geometria del pezzo: ignora cartiglio, tabelle, quote numeriche, testi e note."
+)
+# Stesse domande validate in eval/judge_eval.py: si ordina per "similar".
+_LIQUID_QUESTIONS = {
+    "same_type": (
+        "Il componente dell'immagine 2 è dello stesso tipo del componente dell'immagine 1 "
+        "(es. entrambi pignoni/ingranaggi, entrambi alberi, entrambi staffe/supporti, "
+        "entrambi raccordi/nippli, entrambi canotti/boccole, entrambi blocchetti)?"
+    ),
+    "same_shape_class": (
+        "I due componenti hanno la stessa classe di forma: entrambi torniti/assialsimmetrici "
+        "(sezioni circolari, diametri, simbolo Ø) oppure entrambi prismatici/fresati/lamiera?"
+    ),
+    "similar_proportions": (
+        "I due componenti hanno proporzioni simili (rapporto lunghezza/diametro o "
+        "lunghezza/larghezza/spessore confrontabile)?"
+    ),
+    "similar": (
+        "Un tecnico che deve stimare il costo di produzione del pezzo dell'immagine 1 "
+        "considererebbe il pezzo dell'immagine 2 un riferimento simile e utile "
+        "(stessa tipologia, forma e proporzioni confrontabili, lavorazioni analoghe)?"
+    ),
+}
+
+
+def _liquid_image_url(image_b64: str) -> Optional[str]:
+    """JPEG in scala di grigi, lato max 1600 px: come nei test e dentro i limiti di patch."""
+    from PIL import Image as PILImage
+    from io import BytesIO
+
+    try:
+        im = PILImage.open(BytesIO(base64.b64decode(image_b64))).convert("L")
+        im.thumbnail((_LIQUID_MAX_SIDE, _LIQUID_MAX_SIDE))
+        buf = BytesIO()
+        im.save(buf, format="JPEG", quality=88)
+        return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+    except Exception as exc:
+        print(f"[liquid] immagine non leggibile: {exc}")
+        return None
+
+
+def _liquid_judge_pair(session, key: str, query_url: str, cand_url: str) -> Optional[Dict[str, float]]:
+    body = {
+        "model": _LIQUID_MODEL,
+        "state": _LIQUID_STATE,
+        "images": [query_url, cand_url],
+        "questions": {name: {"type": "noul", "instructions": text} for name, text in _LIQUID_QUESTIONS.items()},
+    }
+    for attempt in range(4):
+        try:
+            resp = session.post(
+                _LIQUID_API_URL,
+                headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                json=body,
+                timeout=_LIQUID_TIMEOUT,
+            )
+        except Exception as exc:
+            print(f"[liquid] errore rete: {type(exc).__name__}")
+            time.sleep(2 ** attempt)
+            continue
+        if resp.status_code == 429 or resp.status_code >= 500:
+            time.sleep(2 ** attempt)
+            continue
+        if resp.status_code >= 400:
+            print(f"[liquid] HTTP {resp.status_code}: {resp.text[:200]}")
+            return None
+        ans = resp.json().get("answers", {})
+        return {n: float(ans[n]["noul"]) for n in _LIQUID_QUESTIONS if n in ans and "noul" in ans[n]}
+    return None
+
+
+def _liquid_rerank(query_b64: str, items: List[Dict[str, Any]]) -> Optional[Dict[str, Dict[str, float]]]:
+    """
+    items: [{"source_pdf", "image_b64"}]. Ritorna {source_pdf: giudizio} oppure None
+    se il riordino non è disponibile (chiave mancante, query illeggibile, troppi errori).
+    """
+    import requests
+    from concurrent.futures import ThreadPoolExecutor
+
+    key = os.environ.get("LIQUID_API_KEY")
+    if not key:
+        print("[liquid] LIQUID_API_KEY mancante: riordino saltato")
+        return None
+    query_url = _liquid_image_url(query_b64)
+    if not query_url:
+        return None
+    todo = [(it["source_pdf"], _liquid_image_url(it["image_b64"])) for it in items if it.get("image_b64")]
+    todo = [(pdf, url) for pdf, url in todo if url]
+    if not todo:
+        return None
+
+    t0 = time.time()
+    session = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(pool_maxsize=_LIQUID_WORKERS)
+    session.mount("https://", adapter)
+    with ThreadPoolExecutor(max_workers=_LIQUID_WORKERS) as ex:
+        results = list(ex.map(lambda pu: (pu[0], _liquid_judge_pair(session, key, query_url, pu[1])), todo))
+    judged = {pdf: j for pdf, j in results if j and "similar" in j}
+    print(f"[liquid] giudicati {len(judged)}/{len(todo)} in {time.time() - t0:.1f}s")
+    # Se metà dei giudizi manca, l'ordine sarebbe falsato: meglio tenere la fusion.
+    if len(judged) < len(todo) / 2:
+        print("[liquid] troppi giudizi falliti: tengo l'ordine della fusion")
+        return None
+    return judged
+
 _dino_model = None
 _dino_processor = None
 _dino_device = None
@@ -2459,6 +2584,7 @@ def _do_fusion_search(client, image_b64, limit=20):
 
     # Il disegno identico (già in archivio) va sempre in testa: con rrf o
     # minmax_noself può scivolare in basso perché non pesa più dello stesso.
+    pinned_ids = set()
     if _FUSION_PIN_SELF:
         dino_raw = {r["source_pdf"]: r.get("score") or 0 for r in res_dino}
         pinned = [r for r in fused if dino_raw.get(r["source_pdf"], 0) >= _FUSION_SELF_THRESHOLD]
@@ -2467,7 +2593,10 @@ def _do_fusion_search(client, image_b64, limit=20):
             pinned_ids = {r["source_pdf"] for r in pinned}
             fused = pinned + [r for r in fused if r["source_pdf"] not in pinned_ids]
 
-    fused = fused[:limit]
+    # Con il riordino Liquid si tengono più candidati (di solito 50) e si
+    # tagliano a `limit` solo dopo il giudizio.
+    rerank = _LIQUID_RERANK
+    fused = fused[:max(limit, _LIQUID_RERANK_POOL) if rerank else limit]
 
     print(f"[fusion] norm={norm}, w_dino={w_dino}, w_cap={w_cap}, pool={pool}, "
           f"dino_hits={len(dino_map)}, cap_hits={len(cap_map)}, fused={len(fused)}")
@@ -2484,6 +2613,28 @@ def _do_fusion_search(client, image_b64, limit=20):
     if missing:
         img_map.update(_fetch_images_by_uuid(client, _DINO_COLLECTION_NAME, missing))
 
+    # 7b. Riordino Liquid: il disegno identico (pinned) resta in testa.
+    if rerank:
+        judged = None
+        try:
+            judged = _liquid_rerank(
+                image_b64,
+                [{"source_pdf": r["source_pdf"], "image_b64": img_map.get(r["source_pdf"])}
+                 for r in fused if r["source_pdf"] not in pinned_ids],
+            )
+        except Exception as exc:
+            print(f"[liquid] riordino fallito, tengo la fusion: {exc}")
+        if judged:
+            for r in fused:
+                r["liquid"] = judged.get(r["source_pdf"])
+            head = [r for r in fused if r["source_pdf"] in pinned_ids]
+            rest = [r for r in fused if r["source_pdf"] not in pinned_ids]
+            rest.sort(key=lambda r: (r.get("liquid") or {}).get("similar", -1.0), reverse=True)
+            if _LIQUID_MIN_P > 0:
+                rest = [r for r in rest if (r.get("liquid") or {}).get("similar", 0.0) >= _LIQUID_MIN_P]
+            fused = head + rest
+    fused = fused[:limit]
+
     # 8. Build output — prefer Sinde5 properties (caption)
     out = []
     for r in fused:
@@ -2496,16 +2647,22 @@ def _do_fusion_search(client, image_b64, limit=20):
                 "name": pdf.replace(".pdf", ""),
             }
         props["image_b64"] = img_map.get(pdf)
-        out.append({
+        item = {
             "uuid": "",
             "properties": props,
             "bm25_score": r["fusion_score"],
             "distance": None,
-        })
+        }
+        if r.get("liquid"):
+            item["liquid_similar"] = round(r["liquid"].get("similar", 0.0), 4)
+            item["liquid"] = {k: round(v, 4) for k, v in r["liquid"].items()}
+        out.append(item)
 
     for i, r in enumerate(fused[:5]):
+        lq = (r.get("liquid") or {}).get("similar")
         print(f"[fusion] {i + 1}. {r['source_pdf']:35s} "
-              f"f={r['fusion_score']:.4f} d={r['dino_norm']:.3f} c={r['cap_norm']:.3f}")
+              f"f={r['fusion_score']:.4f} d={r['dino_norm']:.3f} c={r['cap_norm']:.3f}"
+              + (f" liquid={lq:.3f}" if lq is not None else ""))
 
     return {"count": len(out), "results": out}
 

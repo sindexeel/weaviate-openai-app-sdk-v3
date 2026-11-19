@@ -19,3 +19,8 @@ services:
         value: https://weaviate-openai-app-sdk-v3.onrender.com
       - key: MCP_API_KEY
         sync: false
+      # Riordino dei risultati con il giudice Liquid (vedi serve.py, _liquid_rerank)
+      - key: LIQUID_API_KEY
+        sync: false
+      - key: LIQUID_RERANK
+        value: "0"
